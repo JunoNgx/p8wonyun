@@ -202,7 +202,7 @@ gameplaystate = {
 		print(count(world))
 		-- drawsys(world)
 		-- debugdrawsys(world)
-		for key,system in pairs(drawsys) do
+		for system in all(drawsys) do
 			system(world)
 		end
 	end
@@ -324,9 +324,13 @@ updatesystems = {
 -->8
 -- draw systems
 drawsys = {
-	drawshadowsys = system({"id", "pos"},
+	-- draw shadow system
+	system({"id", "pos"},
 		function(e)
-			local offset = 1
+			
+			-- distance from object to shadow
+			local offset = 2
+
 			for color=1, 15 do 
 				pal(color, 1)
 			end
@@ -340,7 +344,8 @@ drawsys = {
 			end
 		end
 	),
-	drawsys = system({"id", "pos"},
+	-- draw sprites system
+	system({"id", "pos"},
 		function(e)
 			if (e.id.class == "enemy") then
 				if (e.id.subclass == "hammerhead") then
@@ -364,7 +369,8 @@ drawsys = {
 			end
 		end
 	),
-	debugdrawsys = system({"pos", "box"},
+	-- draw collision boxes, for debug purposes
+	system({"pos", "box"},
 		function(e)
 			pal()
 			rect(e.pos.x, e.pos.y, e.pos.x + e.box.w, e.pos.y+ e.box.h, 8)
