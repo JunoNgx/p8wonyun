@@ -6,6 +6,10 @@ __lua__
 
 -- component entity system and utility functions
 
+c = {
+	player_firerate = 5
+}
+
 world = {}
 
 function _has(e, ks)
@@ -190,9 +194,6 @@ gameplaystate = {
 		end)
 	end,
 	update = function()
-		-- updatesystems.motionsys(world)
-		-- updatesystems.controlsys(world)
-		-- updatesystems.keepinboundssys(world)
 		for key,system in pairs(updatesystems) do
 			system(world)
 		end
@@ -200,8 +201,6 @@ gameplaystate = {
 	end,
 	draw = function()
 		print(count(world))
-		-- drawsys(world)
-		-- debugdrawsys(world)
 		for system in all(drawsys) do
 			system(world)
 		end
@@ -260,12 +259,6 @@ end
 -->8
 -- update system
 updatesystems = {
-	motionsys = system({"pos", "vel"},
-		function(e) 
-			e.pos.x += e.vel.x
-			e.pos.y += e.vel.y
-		end
-	),
 	timersys = system ({"timer"},
 		function(e)
 			if (e.timer.lifetime > 0) then
@@ -276,13 +269,37 @@ updatesystems = {
 			end
 		end
 	),
+	motionsys = system({"pos", "vel"},
+		function(e) 
+			e.pos.x += e.vel.x
+			e.pos.y += e.vel.y
+		end
+	),
 	collisionsys = system({"id", "pos", "box"},
-		function(e)
-			if (e.id.class == "player") then
+		function(e1)
+			if (e1.id.class == "fbullet") then
 				enemies = getid("enemy")
-				for ee in all(enemies) do
-					-- if coll()
+				for e2 in all(enemies) do
+					if coll(e1, e2) then
+						del(world, e1)
+						e2.hp -= 1
+					end
 				end
+			end
+		end
+	),
+	healthsys = system({"hp"},
+		function(e)
+			if e.hp == 0 then
+				-- explosion(e.pos.x, e.pos.y)
+				del(world, e)
+			end
+		end
+	),
+	playerweaponsystem = system({"playerweapon"},
+		function(e)
+			if (e.playerweapon.cooldown >0) then
+				e.playerweapon.cooldown -= 1
 			end
 		end
 	),
@@ -294,7 +311,19 @@ updatesystems = {
 			e.pos.y = max(e.pos.y, 0)
 		end
 	),
-	controlsys = system({"playercontrol", "vel", "pos"},
+	outofboundsdestroysys = system({"outofboundsdestroy"},
+		function(e)
+			local bounds_offset = 10
+			if (e.pos.x > 128 + bounds_offset)
+				or (e.pos.x < 0 - bounds_offset)
+				or (e.pos.y > 128 + bounds_offset)
+				or (e.pos.y < 0 - bounds_offset) then
+				
+				del(world, e)
+			end
+		end
+	),
+	controlsys = system({"playercontrol"},
 		function(e)
 			local speed = 3
 			-- sign = (x < 0) ? "negative" : "non-negative";
@@ -318,6 +347,14 @@ updatesystems = {
 			else
 				e.vel.y = 0
 			end
+
+			if (btn(5)) then
+				if (e.playerweapon.cooldown <=0) then
+					fbullet(e.pos.x+1, e.pos.y)
+					e.playerweapon.cooldown = c.player_firerate
+					-- e.playerweapon.ammo -= 1
+				end
+			end
 		end
 	)
 }
@@ -325,7 +362,7 @@ updatesystems = {
 -- draw systems
 drawsys = {
 	-- draw shadow system
-	system({"id", "pos"},
+	system({"id", "pos", "shadow"},
 		function(e)
 			
 			-- distance from object to shadow
@@ -347,25 +384,36 @@ drawsys = {
 	-- draw sprites system
 	system({"id", "pos"},
 		function(e)
-			if (e.id.class == "enemy") then
+			
+			if (e.id.class == "player") then
+				pal()
+				-- draw main body
+				spr(0, e.pos.x-2, e.pos.y, 1.2, 2)
+				
+				-- right gauge, hp
+				for i=1,(e.hp) do
+					circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
+				end
+
+				-- draw ammunition
+				-- for i=0,(e.hp) do
+				-- 	circ(e.pos.x+9, e.pos.y + 12 - i*2, 0, 8)
+				-- end
+
+
+			elseif (e.id.class == "enemy") then
 				if (e.id.subclass == "hammerhead") then
 					pal()
 					spr(32, e.pos.x-3, e.pos.y, 2, 2)
-					-- rect(0, 0, 10, 10)
+					-- right gauge, hp
+					for i=1,(e.hp) do
+						circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
+					end
 				end
 
-			elseif (e.id.class == "player") then
+			elseif (e.id.class == "fbullet") then
 				pal()
-				spr(0, e.pos.x-2, e.pos.y, 1.2, 2)
-				-- print ammunition
-				-- print("10", e.pos.x+8, e.pos.y+7, 6)
-				for i=0,3 do
-					circ(e.pos.x+9, e.pos.y + 12 - i*2, 0, 8)
-				end
-				-- print hp
-				for i=0,(e.playerweapon.ammo) do
-					circ(e.pos.x-5, e.pos.y + 12 - i*2, 0, 11)
-				end
+				spr(18, e.pos.x, e.pos.y, 1, 1)
 			end
 		end
 	),
@@ -381,7 +429,7 @@ drawsys = {
 -->8
 -- entity constructors
 
-function player(_x , _y)
+function player(_x, _y)
 
     add(world, {
         id = {
@@ -397,17 +445,20 @@ function player(_x , _y)
         },
         box = {
             w = 4,
-            h = 12
+            h = 12,
 		},
+		hp = 4,
 		playerweapon = {
 			ammo = 4,
+			cooldown = 0
 		},
-		playercontrol = {},
-		keepsinbounds = {},
-    })
+		playercontrol = true,
+		keepsinbounds = true,
+		shadow = true,
+	})
 end
 
-function enemy(_x , _y, _vx, _vy)
+function enemy(_x, _y, _vx, _vy)
 
     add(world, {
         id = {
@@ -425,7 +476,39 @@ function enemy(_x , _y, _vx, _vy)
         box = {
             w = 9,
             h = 16
-        }
+		},
+		hp = 3,
+		weapon = true,
+		shadow = true,
+		outofboundsdestroy = true,
+    })
+end
+
+-- friendly bullet
+function fbullet(_x, _y)
+
+	local speed = -12
+
+    add(world, {
+        id = {
+            class = "fbullet"
+        },
+        pos = {
+            x=_x,
+            y=_y
+        },
+        vel = {
+            x=0,
+            y=speed
+        },
+        box = {
+            w = 2,
+            h = 6
+		},
+		ani = {
+
+		},
+		outofboundsdestroy = true,
     })
 end
 
@@ -448,13 +531,13 @@ __gfx__
 00ccccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00ccccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0ccccccc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0ccc6ccc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0cc666cc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-ccc666ccc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-ccc666ccc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00066600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0ccc6ccc000000000b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0cc666cc00000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+ccc666ccc0000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+ccc666ccc0000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0006660000000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000bbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000b0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00050005500050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00555065560555000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
