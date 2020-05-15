@@ -11,6 +11,7 @@ __lua__
 -- 01 explosion
 
 c = {
+	shadow_offset = 2,
 	bounds_offset = 64,
 
 	player_firerate = 5,
@@ -401,68 +402,35 @@ updatesystems = {
 -- draw systems
 drawsys = {
 	-- draw shadow
-	system({"id", "pos", "shadow"},
+	system({"draw", "shadow"},
 		function(e)
 			
-			-- distance from object to shadow
-			local offset = 2
+			-- -- distance from object to shadow
+			-- local offset = 2
+
+			-- palall(1)
+			-- if (e.id.class == "enemy") then
+			-- 	if (e.id.subclass == "hammerhead") then
+			-- 		spr(32, e.pos.x-3+offset, e.pos.y+offset, 2, 2)
+			-- 		-- rect(0, 0, 10, 10)
+			-- 	end
+			-- elseif (e.id.class == "player") then
+			-- 	spr(0, e.pos.x+offset, e.pos.y+offset, 1.2, 2)
+			-- end
+
+			-- pal()
 
 			palall(1)
-			if (e.id.class == "enemy") then
-				if (e.id.subclass == "hammerhead") then
-					spr(32, e.pos.x-3+offset, e.pos.y+offset, 2, 2)
-					-- rect(0, 0, 10, 10)
-				end
-			elseif (e.id.class == "player") then
-				spr(0, e.pos.x+offset, e.pos.y+offset, 1.2, 2)
-			end
-
+			e:draw(c.shadow_offset)
 			pal()
 		end
 	),
 	-- draw sprites
-	system({"id", "pos"},
+	system({"draw"},
 		function(e)
+
+			e:draw()
 			
-			if (e.id.class == "player") then
-				-- draw main body
-				spr(0, e.pos.x-2, e.pos.y, 1.2, 2)
-				
-				-- left gauge, hp
-				for i=1,(e.hp) do
-					circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
-				end
-
-				-- draw ammunition
-				-- for i=0,(e.hp) do
-				-- 	circ(e.pos.x+9, e.pos.y + 12 - i*2, 0, 8)
-				-- end
-
-			elseif (e.id.class == "enemy") then
-				if (e.id.subclass == "hammerhead") then
-
-					palforhitframe(e) 
-					spr(32, e.pos.x-3, e.pos.y, 2, 2)
-					e.hitframe = false
-					pal()
-
-					-- left gauge, hp
-					for i=1,(e.hp) do
-						circ(e.pos.x-5, e.pos.y + 16 - i*2, 0, 11)
-					end
-				end
-
-			elseif (e.id.class == "fbullet") then
-
-				if (flr(e.ani.frame) == 0) then
-					spr(18, e.pos.x, e.pos.y, 1, 1)
-				elseif (flr(e.ani.frame) == 1) then
-					spr(19, e.pos.x, e.pos.y, 1, 1)
-				end
-
-				if (e.ani.frame) then print(e.ani.frame) end
-				
-			end
 		end
 	),
 	-- draw collision boxes, for debug purposes
@@ -544,6 +512,16 @@ function player(_x, _y)
 		playercontrol = true,
 		keepsinbounds = true,
 		shadow = true,
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+
+			spr(0, self.pos.x-2, self.pos.y, 1.2, 2)
+				
+			-- left gauge, hp
+			for i=1,(self.hp) do
+				circ(self.pos.x-5, self.pos.y + 14 - i*2, 0, 11)
+			end
+		end
 	})
 end
 
@@ -571,6 +549,19 @@ function hammerhead(_x, _y)
 		weapon = true,
 		shadow = true,
 		outofboundsdestroy = true,
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+
+			palforhitframe(self) 
+			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
+			self.hitframe = false
+			pal()
+
+			-- left gauge, hp
+			for i=1,(self.hp) do
+				circ(self.pos.x-5, self.pos.y + 16 - i*2, 0, 11)
+			end
+		end
     })
 end
 
@@ -603,6 +594,15 @@ function fbullet(_x, _y)
 			loop = false,
 		},
 		outofboundsdestroy = true,
+		draw = function(self)
+			if (flr(self.ani.frame) == 0) then
+				spr(18, self.pos.x, self.pos.y, 1, 1)
+			elseif (flr(self.ani.frame) == 1) then
+				spr(19, self.pos.x, self.pos.y, 1, 1)
+			end
+
+			if (self.ani.frame) then print(self.ani.frame) end
+		end
     })
 end
 
