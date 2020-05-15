@@ -4,20 +4,42 @@ __lua__
 -- Project Wonyun
 -- by Juno Nguyen
 
--- huge table for constants for game design tuning
+-- huge table of constants for game design tuning
 c = {
 	shadow_offset = 2,
 	bounds_offset = 64,
 
 	player_firerate = 5,
 
+	fbullet_speed = -12,
+
 	spawnrate_min = 45, -- in ticks
 	spawnrate_range = 45, -- in ticks
+
+	explosion_offset_range = 8,
 }
 
 -- sfx note
 -- 00 player fire
 -- 01 explosion
+
+-- table for sprite position of explosion table
+--   	each position of the table will provide
+-- 	  	the corresponding sprite number (in the sprite sheet)
+--    	and the width/height to display the sprite appropriately
+--     	e.g. frame 5 will display sprite 010 with the range of 2
+-- 		spr no, offsets, spr width/height range
+--		offset is needed as not all sprites are of equal sizes
+explosion_animation_table = {
+	{15,  0, 1},
+	{14,  0, 1},
+	{13,  0, 1},
+	{12,  0, 1},
+	{10, -4, 2},
+	{42, -4, 2},
+	{44, -4, 2},
+}
+
 
 -->8
 -- component entity system and utility functions
@@ -225,7 +247,6 @@ gameplaystate = {
 		for key,system in pairs(updatesystems) do
 			system(world)
 		end
-
 	end,
 	draw = function()
 		print(count(world))
@@ -281,7 +302,7 @@ end
 
 function _draw()
 	-- due to interference with fading
-	if (gamestate.name ~= "transit") cls()
+	if (gamestate.name ~= "transit") then cls() end
 
 	gamestate.draw()
 	fade_draw(fader.pos)
@@ -337,20 +358,19 @@ updatesystems = {
 			end
 		end
 	),
-	healthsys = system({"hp"},
+	healthsys = system({"id", "hp"},
 		function(e)
 			if e.hp == 0 then
-				-- explosion(e.pos.x, e.pos.y)
-				screenshake(7, 0.3)
-				sfx(1)
-				del(world, e)
-			end
-		end
-	),
-	playerweaponsystem = system({"playerweapon"},
-		function(e)
-			if (e.playerweapon.cooldown >0) then
-				e.playerweapon.cooldown -= 1
+
+				
+				if (e.id.class == "enemy") then
+					smallexplosions(e.pos.x, e.pos.y)
+					screenshake(7, 0.3)
+					sfx(1)
+				end
+
+			del(world, e)
+
 			end
 		end
 	),
@@ -373,6 +393,25 @@ updatesystems = {
 				del(world, e)
 			end
 		end
+	),
+	particlesystem = system({"particle"},
+		function(e)
+			if (e.particle.lifetime < e.particle.lifetime_max) then
+				e.particle.lifetime += 1
+			else
+				del(world, e)
+			end
+		end
+	),
+
+	-- player-related systems
+
+	playerweaponsystem = system({"playerweapon"},
+	function(e)
+		if (e.playerweapon.cooldown >0) then
+			e.playerweapon.cooldown -= 1
+		end
+	end
 	),
 	controlsys = system({"playercontrol"},
 		function(e)
@@ -496,6 +535,12 @@ function screenshake_update()
 		camera()
 	end
 end
+
+function smallexplosions(_x, _y)
+	for i=1, 1 do
+		explosion(_x + rnd(c.explosion_offset_range), _y + rnd(c.explosion_offset_range))
+	end
+end
  
 -->8
 -- entity constructors
@@ -528,7 +573,6 @@ function player(_x, _y)
 		shadow = true,
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
-
 			spr(0, self.pos.x-2, self.pos.y, 1.2, 2)
 		end
 	})
@@ -568,7 +612,7 @@ end
 -- friendly bullet
 function fbullet(_x, _y)
 
-	local speed = -12
+	-- local speed = -12
 	-- local speed = -3
 
     add(world, {
@@ -581,7 +625,7 @@ function fbullet(_x, _y)
         },
         vel = {
             x=0,
-            y=speed
+            y=c.fbullet_speed
         },
         box = {
             w = 5,
@@ -590,7 +634,7 @@ function fbullet(_x, _y)
 		ani = {
 			frame = 0, -- determining which frame of the animation is being displayed
 			framerate = 1, -- how fast the frame rotates, 1 is one frame per one tick
-			framecount = 2, -- 
+			framecount = 2, -- the amount of frames in the animation
 			loop = false,
 		},
 		outofboundsdestroy = true,
@@ -601,9 +645,52 @@ function fbullet(_x, _y)
 				spr(19, self.pos.x, self.pos.y, 1, 1)
 			end
 
-			-- if (self.ani.frame) then print(self.ani.frame) end
+			-- debug
+			print(self.ani.frame, self.pos.x, self.pos.y)
 		end
     })
+end
+
+function explosion(_x, _y)
+	
+	add(world,{
+		id = {
+            class = "fbullet"
+        },
+        pos = {
+            x=_x,
+            y=_y
+		},
+		particle = {
+			lifetime = 0,
+			lifetime_max = 60
+		},
+		ani = {
+			frame = 0,
+			framerate = 0.7,
+			framecount = 8,
+			loop = false
+		},
+		draw = function(self)
+
+			-- table in lua starts at 1, so ceil is appropriate
+			--     to find the frame in the table
+			-- local frame = ceil(self.ani.frame) 
+
+			-- local frame = ceil(self.ani.frame)
+			local frame = 6
+
+			spr(explosion_animation_table[frame][1],
+				self.pos.x + explosion_animation_table[frame][2], 
+				self.pos.y + explosion_animation_table[frame][2],
+				explosion_animation_table[frame][3], 
+				explosion_animation_table[frame][3]
+			)
+
+			-- debug
+			print(self.ani.frame, self.pos.x, self.pos.y)
+		end
+	})
 end
 
 function timer(_lifetimeinsec, _f) 
