@@ -6,11 +6,17 @@ __lua__
 
 -- component entity system and utility functions
 
+-- sfx note
+-- 00 player fire
+-- 01 explosion
+
 c = {
+	bounds_offset = 64,
+
 	player_firerate = 5,
 
-	spawnrate_min = 120,
-	spawnrate_max = 210,
+	spawnrate_min = 45, -- in ticks
+	spawnrate_range = 45, -- in ticks
 }
 
 world = {}
@@ -188,15 +194,17 @@ gameplaystate = {
 		world = {}
 		player(64, 64)
 
-		enemy(64, 32, 0, 0.1)
-		enemy(32, 32, 0, -1)
-		enemy(96, 32, 1, 0)
+		hammerhead(64, 32)
+		hammerhead(32, 32)
+		hammerhead(96, 32)
 	
 		timer(1, function()
-			enemy(12, 12, 1, 1)
+			hammerhead(12, 12)
 		end)
 	end,
 	update = function()
+		spawner_update()
+		screenshake_update()
 		for key,system in pairs(updatesystems) do
 			system(world)
 		end
@@ -207,6 +215,9 @@ gameplaystate = {
 		for system in all(drawsys) do
 			system(world)
 		end
+
+		-- debug
+		if (spawncooldown) then print(spawncooldown) end
 	end
 }
 
@@ -278,6 +289,22 @@ updatesystems = {
 			e.pos.y += e.vel.y
 		end
 	),
+	animationsys = system({"ani"},
+		function(e)
+			if (e.ani.loop) then
+				if (e.ani.frame < e.ani.framecount) then
+					e.ani.frame += e.ani.framerate
+				else
+					e.ani.frame = 0
+				end
+			else
+				if (e.ani.frame < e.ani.framecount - 1) then
+					e.ani.frame += e.ani.framerate
+				end
+			end
+			
+		end
+	),
 	collisionsys = system({"id", "pos", "box"},
 		function(e1)
 			if (e1.id.class == "fbullet") then
@@ -295,6 +322,8 @@ updatesystems = {
 		function(e)
 			if e.hp == 0 then
 				-- explosion(e.pos.x, e.pos.y)
+				screenshake(7, 0.3)
+				sfx(1)
 				del(world, e)
 			end
 		end
@@ -316,11 +345,11 @@ updatesystems = {
 	),
 	outofboundsdestroysys = system({"outofboundsdestroy"},
 		function(e)
-			local bounds_offset = 10
-			if (e.pos.x > 128 + bounds_offset)
-				or (e.pos.x < 0 - bounds_offset)
-				or (e.pos.y > 128 + bounds_offset)
-				or (e.pos.y < 0 - bounds_offset) then
+			-- local bounds_offset = 64
+			if (e.pos.x > 128 + c.bounds_offset)
+				or (e.pos.x < 0 - c.bounds_offset)
+				or (e.pos.y > 128 + c.bounds_offset)
+				or (e.pos.y < 0 - c.bounds_offset) then
 				
 				del(world, e)
 			end
@@ -331,7 +360,6 @@ updatesystems = {
 			-- local speed = 5
 
 			local speed = (btn(4)) and 2 or 6
-			-- speed 
 
 			e.vel.x, e.vel.y = 0, 0
 
@@ -348,7 +376,8 @@ updatesystems = {
 
 			if (btn(5)) then
 				if (e.playerweapon.cooldown <=0) then
-					fbullet(e.pos.x+1, e.pos.y)
+					sfx(0)
+					fbullet(e.pos.x, e.pos.y-5)
 					e.playerweapon.cooldown = c.player_firerate
 					-- e.playerweapon.ammo -= 1
 				end
@@ -377,6 +406,8 @@ drawsys = {
 			elseif (e.id.class == "player") then
 				spr(0, e.pos.x+offset, e.pos.y+offset, 1.2, 2)
 			end
+
+			pal()
 		end
 	),
 	-- draw sprites system
@@ -384,11 +415,10 @@ drawsys = {
 		function(e)
 			
 			if (e.id.class == "player") then
-				pal()
 				-- draw main body
 				spr(0, e.pos.x-2, e.pos.y, 1.2, 2)
 				
-				-- right gauge, hp
+				-- left gauge, hp
 				for i=1,(e.hp) do
 					circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
 				end
@@ -398,28 +428,33 @@ drawsys = {
 				-- 	circ(e.pos.x+9, e.pos.y + 12 - i*2, 0, 8)
 				-- end
 
-
 			elseif (e.id.class == "enemy") then
 				if (e.id.subclass == "hammerhead") then
-					pal()
 					spr(32, e.pos.x-3, e.pos.y, 2, 2)
-					-- right gauge, hp
+
+					-- left gauge, hp
 					for i=1,(e.hp) do
-						circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
+						circ(e.pos.x-5, e.pos.y + 16 - i*2, 0, 11)
 					end
 				end
 
 			elseif (e.id.class == "fbullet") then
-				pal()
-				spr(18, e.pos.x, e.pos.y, 1, 1)
+
+				if (flr(e.ani.frame) == 0) then
+					spr(18, e.pos.x, e.pos.y, 1, 1)
+				elseif (flr(e.ani.frame) == 1) then
+					spr(19, e.pos.x, e.pos.y, 1, 1)
+				end
+
+				if (e.ani.frame) then print(e.ani.frame) end
+				
 			end
 		end
 	),
 	-- draw collision boxes, for debug purposes
 	system({"pos", "box"},
 		function(e)
-			pal()
-			rect(e.pos.x, e.pos.y, e.pos.x + e.box.w, e.pos.y+ e.box.h, 8)
+			-- rect(e.pos.x, e.pos.y, e.pos.x + e.box.w, e.pos.y+ e.box.h, 8)
 		end
 	),
 }
@@ -431,14 +466,39 @@ spawncooldown = 0
 
 function spawner_update()
 	if spawncooldown > 0 then
-		spawn()
+		spawncooldown -= 1
 	else 
-		spawncooldown = c.spawnrate_min + flr(rnd(c.spawnrate_max))
+		spawn()
+		spawn_cooldown_reset()
 	end
+end
+
+function spawn_cooldown_reset()
+	spawncooldown = c.spawnrate_min + flr(rnd(c.spawnrate_range))
 end
 
 function spawn()
 	local die = ceil(rnd(6))
+
+	hammerhead(rnd(128), -rnd(60))
+	spawn_cooldown_reset()
+end
+
+screenshake_timer = 0
+screenshake_mag = 0
+
+function screenshake(_magnitude, _lengthinseconds)
+	screenshake_timer = _lengthinseconds * 30
+	screenshake_mag = _magnitude
+end
+
+function screenshake_update()
+	if (screenshake_timer>0) then
+		screenshake_timer -= 1
+		camera(rnd(screenshake_mag),rnd(screenshake_mag))
+	else
+		camera()
+	end
 end
  
 -->8
@@ -473,7 +533,7 @@ function player(_x, _y)
 	})
 end
 
-function enemy(_x, _y, _vx, _vy)
+function hammerhead(_x, _y)
 
     add(world, {
         id = {
@@ -485,14 +545,14 @@ function enemy(_x, _y, _vx, _vy)
             y=_y
         },
         vel = {
-            x=_vx,
-            y=_vy
+            x=0,
+            y=1
         },
         box = {
             w = 9,
             h = 16
 		},
-		hp = 3,
+		hp = 6,
 		weapon = true,
 		shadow = true,
 		outofboundsdestroy = true,
@@ -503,6 +563,7 @@ end
 function fbullet(_x, _y)
 
 	local speed = -12
+	-- local speed = -3
 
     add(world, {
         id = {
@@ -517,11 +578,14 @@ function fbullet(_x, _y)
             y=speed
         },
         box = {
-            w = 2,
+            w = 5,
             h = 6
 		},
 		ani = {
-
+			frame = 0, -- determining which frame of the animation is being displayed
+			framerate = 1, -- how fast the frame rotates, 1 is one frame per one tick
+			framecount = 2, -- 
+			loop = false,
 		},
 		outofboundsdestroy = true,
     })
@@ -546,14 +610,14 @@ __gfx__
 00ccccc0000000000000000000000000000000000000000888888888888888888000000000000000088800000888000008800880008888000008800000000000
 00ccccc0000000000000000000000000000000000000000688888888888888886000000000000000888000000088800000888800000880000000000000000000
 0ccccccc000000000000000000000000000000000000006668888888888888866600000000000000088800000888000000088000000000000000000000000000
-0ccc6ccc000000000b0000000ccc0000000000000000066666888888888888666660000000000000008880008880000000000000000000000000000000000000
-0cc666cc00000000bbb000000ccc0000000000000000666666688888888886666666000000000000000888088800000000000000000000000000000000000000
-ccc666ccc0000000bbb000000cc00000000000000006666666668888888866666666600000000000000088888000000000000000000000000000000000000000
-ccc666ccc0000000bbb000000cc00000000000000066666666666888888666666666660000000000000008880000000000000000000000000000000000000000
-0006660000000000bbb0000000000000000000000666666666666688886666666666666000000000000000800000000000000000000000000000000000000000
-0000000000000000bbb0000000000000000000006666666666666668866666666666666600000000000000000000000000000000000000000000000000000000
-0000000000000000b0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0ccc6ccc000000000aaa0000bbbbb000000000000000066666888888888888666660000000000000008880008880000000000000000000000000000000000000
+0cc666cc00000000aaaaa000bbbbb000000000000000666666688888888886666666000000000000000888088800000000000000000000000000000000000000
+ccc666ccc0000000aaaaa000bbbbb000000000000006666666668888888866666666600000000000000088888000000000000000000000000000000000000000
+ccc666ccc0000000aaaaa000bbbbb000000000000066666666666888888666666666660000000000000008880000000000000000000000000000000000000000
+0006660000000000aaaaa000bbbbb000000000000666666666666688886666666666666000000000000000800000000000000000000000000000000000000000
+0000000000000000aaaaa000bbbbb000000000006666666666666668866666666666666600000000000000000000000000000000000000000000000000000000
+0000000000000000aaaaa000bbbbb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000aaa0000b000b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00050005500050006000000000600000600000000000000660000000000000060000000000000000000000080000000000000000800000000000000000000000
 00555065560555006600000006600000660000000000006666000000000000660000000000000000000000888000000000000008080000000000000000000000
 00055566665550006660050066600000666000000000066666600000000006660000000000000000000008808800000000000080008000000000000000000000
@@ -603,4 +667,5 @@ ccc666ccc0000000bbb000000cc00000000000000066666666666888888666666666660000000000
 77777777777777777777777777777777777777777777777777777777777777770000000000000000000000000000000000000000000000000000000000000000
 77777777777777777777777777777777777777777777777777777777777777770000000000000000000000000000000000000000000000000000000000000000
 __sfx__
-00010000000000000000000000003000035000380003a0003900034000320002d000250001f0001d0001d0001f000210000000025000260002200000000000000000000000000000000000000000000000000000
+000100000c0510c0510c0510c0510c0510c0510c0513a0013900134001320012d001250011f0011d0011d0011f001210010000125001260012200100001000010000100001000010000100001000010000100001
+0101000024157281572b15731157311572f1572915725157211571c1571b1571b1571b1571b1571e15723157281572f1573915700107001070010700107001070010700107001070010700107001070010700107
