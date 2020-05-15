@@ -328,27 +328,22 @@ updatesystems = {
 	),
 	controlsys = system({"playercontrol"},
 		function(e)
-			local speed = 3
-			-- sign = (x < 0) ? "negative" : "non-negative";
-			-- e.vel.x = (btn(0)) and -speed or 0;
-			-- e.vel.x = (btn(1)) and speed or 0;
-			-- e.vel.y = (btn(2)) and -speed or 0;
-			-- e.vel.y = (btn(3)) and speed or 0;
+			-- local speed = 5
 
-			if (btn(0)) then
-				e.vel.x = -speed
-			elseif (btn(1)) then
-				e.vel.x = speed
-			else
-				e.vel.x = 0
-			end
-			
-			if (btn(2)) then
-				e.vel.y = -speed
-			elseif (btn(3)) then
-				e.vel.y = speed
-			else
-				e.vel.y = 0
+			local speed = (btn(4)) and 2 or 6
+			-- speed 
+
+			e.vel.x, e.vel.y = 0, 0
+
+			if (btn(0)) e.vel.x = -speed
+			if (btn(1)) e.vel.x = speed
+			if (btn(2)) e.vel.y = -speed
+			if (btn(3)) e.vel.y = speed
+
+			-- diagonal etiquette
+			if (e.vel.x * e.vel.y ~= 0) then
+				e.vel.x *= 0.707
+				e.vel.y *= 0.707
 			end
 
 			if (btn(5)) then
@@ -443,7 +438,7 @@ function spawner_update()
 end
 
 function spawn()
-	local die = 1 + flr(rnd)
+	local die = ceil(rnd(6))
 end
  
 -->8
