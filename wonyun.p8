@@ -4,12 +4,7 @@ __lua__
 -- Project Wonyun
 -- by Juno Nguyen
 
--- component entity system and utility functions
-
--- sfx note
--- 00 player fire
--- 01 explosion
-
+-- huge table for constants for game design tuning
 c = {
 	shadow_offset = 2,
 	bounds_offset = 64,
@@ -20,8 +15,15 @@ c = {
 	spawnrate_range = 45, -- in ticks
 }
 
-world = {}
+-- sfx note
+-- 00 player fire
+-- 01 explosion
 
+-->8
+-- component entity system and utility functions
+
+-- these two functions are responsible for the entire ces
+-- check if entity has all the components
 function _has(e, ks)
 	for c in all(ks) do
         if (not e[c]) then 
@@ -31,6 +33,8 @@ function _has(e, ks)
     return true
 end
 
+-- iterate through entire table of entities (world)
+-- run a custom function via the second parameter
 function system(ks, f)
     return function(system)
         for e in all(system) do
@@ -41,6 +45,7 @@ function system(ks, f)
     end
 end
 
+-- return of list with entity owning the corresponding id class
 function getid(_id)
     t = {}
     for e in all(world) do
@@ -229,7 +234,7 @@ gameplaystate = {
 		end
 
 		-- debug
-		if (spawncooldown) then print(spawncooldown) end
+		-- if (spawncooldown) then print(spawncooldown) end
 	end
 }
 
@@ -284,6 +289,7 @@ end
 
 -->8
 -- update system
+
 updatesystems = {
 	timersys = system ({"timer"},
 		function(e)
@@ -358,7 +364,7 @@ updatesystems = {
 	),
 	outofboundsdestroysys = system({"outofboundsdestroy"},
 		function(e)
-			-- local bounds_offset = 64
+
 			if (e.pos.x > 128 + c.bounds_offset)
 				or (e.pos.x < 0 - c.bounds_offset)
 				or (e.pos.y > 128 + c.bounds_offset)
@@ -370,7 +376,6 @@ updatesystems = {
 	),
 	controlsys = system({"playercontrol"},
 		function(e)
-			-- local speed = 5
 
 			local speed = (btn(4)) and 2 or 6
 
@@ -398,28 +403,15 @@ updatesystems = {
 		end
 	)
 }
+
 -->8
 -- draw systems
+
 drawsys = {
+
 	-- draw shadow
 	system({"draw", "shadow"},
 		function(e)
-			
-			-- -- distance from object to shadow
-			-- local offset = 2
-
-			-- palall(1)
-			-- if (e.id.class == "enemy") then
-			-- 	if (e.id.subclass == "hammerhead") then
-			-- 		spr(32, e.pos.x-3+offset, e.pos.y+offset, 2, 2)
-			-- 		-- rect(0, 0, 10, 10)
-			-- 	end
-			-- elseif (e.id.class == "player") then
-			-- 	spr(0, e.pos.x+offset, e.pos.y+offset, 1.2, 2)
-			-- end
-
-			-- pal()
-
 			palall(1)
 			e:draw(c.shadow_offset)
 			pal()
@@ -428,9 +420,31 @@ drawsys = {
 	-- draw sprites
 	system({"draw"},
 		function(e)
-
+			-- flashing white color when entity is damaged
+			if (e.hitframe) then palforhitframe(e) end
 			e:draw()
-			
+			if (e.hitframe) then 
+				e.hitframe = false
+				pal()
+			end
+		end
+	),
+	-- diegetic ui draw
+	system({"id", "draw"},
+		function(e)
+			if (e.id.class == "player") then
+				-- -- left gauge, hp
+				for i=1,(e.hp) do
+					circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
+				end
+			elseif (e.id.class == "enemy") then
+				if (e.id.subclass == "hammerhead") then
+					-- left gauge, hp
+					for i=1,(e.hp) do
+						circ(e.pos.x-5, e.pos.y + 16 - i*2, 0, 11)
+					end
+				end
+			end
 		end
 	),
 	-- draw collision boxes, for debug purposes
@@ -442,7 +456,7 @@ drawsys = {
 }
 
 -->8
--- spawner
+-- spawner functions
 
 spawncooldown = 0
 
@@ -516,11 +530,6 @@ function player(_x, _y)
 			_offset = (_offset) and _offset or 0
 
 			spr(0, self.pos.x-2, self.pos.y, 1.2, 2)
-				
-			-- left gauge, hp
-			for i=1,(self.hp) do
-				circ(self.pos.x-5, self.pos.y + 14 - i*2, 0, 11)
-			end
 		end
 	})
 end
@@ -551,16 +560,7 @@ function hammerhead(_x, _y)
 		outofboundsdestroy = true,
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
-
-			palforhitframe(self) 
 			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
-			self.hitframe = false
-			pal()
-
-			-- left gauge, hp
-			for i=1,(self.hp) do
-				circ(self.pos.x-5, self.pos.y + 16 - i*2, 0, 11)
-			end
 		end
     })
 end
@@ -601,7 +601,7 @@ function fbullet(_x, _y)
 				spr(19, self.pos.x, self.pos.y, 1, 1)
 			end
 
-			if (self.ani.frame) then print(self.ani.frame) end
+			-- if (self.ani.frame) then print(self.ani.frame) end
 		end
     })
 end
