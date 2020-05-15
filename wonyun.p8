@@ -70,7 +70,8 @@ function palall(_color) -- switch all colors to target color
 	end
 end
 
-function palforhitframe(_entity)
+-- switch all color to white (7) for a flashing effect when entity is damaged
+function palforhitframe(_entity) 
 	if (_entity.hitframe) then palall(7) end
 end
 
@@ -399,7 +400,7 @@ updatesystems = {
 -->8
 -- draw systems
 drawsys = {
-	-- draw shadow system
+	-- draw shadow
 	system({"id", "pos", "shadow"},
 		function(e)
 			
@@ -419,7 +420,7 @@ drawsys = {
 			pal()
 		end
 	),
-	-- draw sprites system
+	-- draw sprites
 	system({"id", "pos"},
 		function(e)
 			
@@ -440,8 +441,7 @@ drawsys = {
 			elseif (e.id.class == "enemy") then
 				if (e.id.subclass == "hammerhead") then
 
-					-- display all color in white for a flashing effect
-					if (e.hitframe) then palall(7) end
+					palforhitframe(e) 
 					spr(32, e.pos.x-3, e.pos.y, 2, 2)
 					e.hitframe = false
 					pal()
