@@ -64,6 +64,16 @@ function coll(e1, e2)
     return false
 end
 
+function palall(_color) -- switch all colors to target color
+	for color=1, 15 do 
+		pal(color, _color)
+	end
+end
+
+function palforhitframe(_entity)
+	if (_entity.hitframe) then palall(7) end
+end
+
 fader = {
 	time = 0,
 	pos = 0, -- full black, according to the table
@@ -313,6 +323,7 @@ updatesystems = {
 					if coll(e1, e2) then
 						del(world, e1)
 						e2.hp -= 1
+						e2.hitframe = true
 					end
 				end
 			end
@@ -395,9 +406,7 @@ drawsys = {
 			-- distance from object to shadow
 			local offset = 2
 
-			for color=1, 15 do 
-				pal(color, 1)
-			end
+			palall(1)
 			if (e.id.class == "enemy") then
 				if (e.id.subclass == "hammerhead") then
 					spr(32, e.pos.x-3+offset, e.pos.y+offset, 2, 2)
@@ -430,7 +439,12 @@ drawsys = {
 
 			elseif (e.id.class == "enemy") then
 				if (e.id.subclass == "hammerhead") then
+
+					-- display all color in white for a flashing effect
+					if (e.hitframe) then palall(7) end
 					spr(32, e.pos.x-3, e.pos.y, 2, 2)
+					e.hitframe = false
+					pal()
 
 					-- left gauge, hp
 					for i=1,(e.hp) do
@@ -552,6 +566,7 @@ function hammerhead(_x, _y)
             w = 9,
             h = 16
 		},
+		hitframe = false,
 		hp = 6,
 		weapon = true,
 		shadow = true,
