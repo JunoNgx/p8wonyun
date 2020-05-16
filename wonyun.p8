@@ -40,6 +40,9 @@ explosion_animation_table = {
 	{44, -4, 2},
 }
 
+-- fade table from color 8 to 0 in 16 steps
+f820t = {8,8,8,8,2,2,2,2,2,2,0,0,0,0,0}
+
 
 -->8
 -- component entity system and utility functions
@@ -249,7 +252,7 @@ gameplaystate = {
 		end
 	end,
 	draw = function()
-		print(count(world))
+		print(#world)
 		for system in all(drawsys) do
 			system(world)
 		end
@@ -347,7 +350,9 @@ updatesystems = {
 	collisionsys = system({"id", "pos", "box"},
 		function(e1)
 			if (e1.id.class == "fbullet") then
+				-- bullet vs enemy
 				enemies = getid("enemy")
+
 				for e2 in all(enemies) do
 					if coll(e1, e2) then
 						del(world, e1)
@@ -374,7 +379,7 @@ updatesystems = {
 			end
 		end
 	),
-	keepinboundssys = system({"keepsinbounds"},
+	keepinscreenssys = system({"keepinscreen"},
 		function(e)
 			e.pos.x = min(e.pos.x, 128)
 			e.pos.x = max(e.pos.x, 0)
@@ -401,6 +406,11 @@ updatesystems = {
 			else
 				del(world, e)
 			end
+		end
+	),
+	explosionupdatesystem = system({"explosion"},
+		function(e)
+			e.explosion.radius +=1
 		end
 	),
 
@@ -537,7 +547,7 @@ function screenshake_update()
 end
 
 function smallexplosions(_x, _y)
-	for i=1, 1 do
+	for i=1, 5 do
 		explosion(_x + rnd(c.explosion_offset_range), _y + rnd(c.explosion_offset_range))
 	end
 end
@@ -569,7 +579,7 @@ function player(_x, _y)
 			cooldown = 0
 		},
 		playercontrol = true,
-		keepsinbounds = true,
+		keepinscreen = true,
 		shadow = true,
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
@@ -663,13 +673,16 @@ function explosion(_x, _y)
 		},
 		particle = {
 			lifetime = 0,
-			lifetime_max = 60
+			lifetime_max = 15
 		},
 		ani = {
-			frame = 0,
-			framerate = 0.7,
+			frame = 1, -- when working with table indexes, do not ever let it go zero
+			framerate = 0.5,
 			framecount = 8,
 			loop = false
+		},
+		explosion = {
+			radius = 8
 		},
 		draw = function(self)
 
@@ -678,8 +691,16 @@ function explosion(_x, _y)
 			-- local frame = ceil(self.ani.frame) 
 
 			-- local frame = ceil(self.ani.frame)
-			local frame = 6
+			local frame = flr(self.ani.frame)
+			local halo_offset = 3
 
+			-- spr(explosion_animation_table[ceil(self.ani.frame)][1],
+			-- 	self.pos.x + explosion_animation_table[ceil(self.ani.frame)][2], 
+			-- 	self.pos.y + explosion_animation_table[ceil(self.ani.frame)][2],
+			-- 	explosion_animation_table[ceil(self.ani.frame)][3], 
+			-- 	explosion_animation_table[ceil(self.ani.frame)][3]
+			-- )
+			
 			spr(explosion_animation_table[frame][1],
 				self.pos.x + explosion_animation_table[frame][2], 
 				self.pos.y + explosion_animation_table[frame][2],
@@ -687,8 +708,17 @@ function explosion(_x, _y)
 				explosion_animation_table[frame][3]
 			)
 
+			rect(
+				self.pos.x - self.explosion.radius + halo_offset,
+				self.pos.y - self.explosion.radius + halo_offset,
+				self.pos.x + self.explosion.radius + halo_offset,
+				self.pos.y + self.explosion.radius + halo_offset,
+				f820t[self.explosion.radius - 7]
+			)
+
 			-- debug
-			print(self.ani.frame, self.pos.x, self.pos.y)
+			-- print(frame, self.pos.x, self.pos.y, explosion_animation_table[1][1])
+			-- printh(frame, "log")
 		end
 	})
 end
