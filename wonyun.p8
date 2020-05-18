@@ -16,7 +16,7 @@ c = {
 	spawnrate_min = 45, -- in ticks
 	spawnrate_range = 45, -- in ticks
 
-	explosion_offset_range = 8,
+	explosion_offset_range = 1,
 }
 
 -- sfx note
@@ -44,6 +44,9 @@ explosion_animation_table = {
 f820t = {8,8,8,8,8,2,2,2,2,2,2,0,0,0,0}
 f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
+-- function sum(x, y)
+-- 	return x + y
+-- end
 
 -->8
 -- component entity system and utility functions
@@ -72,16 +75,16 @@ function system(ks, f)
 end
 
 -- return of list with entity owning the corresponding id class
-function getid(_id)
-    t = {}
-    for e in all(world) do
+function getentitiesbyclass(_class, _world)
+    local filter_entities = {}
+    for e in all(_world) do
 		if (e.id) then
-			if (e.id.class == _id) then
-				add(t, e)
+			if (e.id.class == _class) then
+				add(filter_entities, e)
 			end
         end
     end
-    return t
+    return filter_entities
 end
 
 -- basic AABB collision detection using pos and box components
@@ -94,6 +97,22 @@ function coll(e1, e2)
         return true
     end
     return false
+end
+
+function sortedbydrawlayeradd(_e, _system)
+	add(_e, _system)
+	if _e.drawinglayer then
+		for i=1,#_system do
+			if _e.drawinglayer < _system[i].drawinglayer then 
+				-- shift all remaining entities by one index
+				for j=#_system-1, i do
+					_system[j+1] = _system[j]
+				end
+				_system[i] = _e
+			end
+		end
+	end
+
 end
 
 function palall(_color) -- switch all colors to target color
@@ -172,7 +191,11 @@ function fade_draw(_position)
 		if flr(_position+1)>=16 then
 			pal(c,0)
 		else
-			pal(c,fader.table[c+1][flr(_position+1)],1)
+			pal(
+				c,
+				fader.table[c+1][flr(_position+1)],
+				1
+			)
 		end
 	end
 end
@@ -352,7 +375,7 @@ updatesystems = {
 		function(e1)
 			if (e1.id.class == "fbullet") then
 				-- bullet vs enemy
-				enemies = getid("enemy")
+				enemies = getentitiesbyclass("enemy", world)
 
 				for e2 in all(enemies) do
 					if coll(e1, e2) then
@@ -411,7 +434,18 @@ updatesystems = {
 	),
 	explosionupdatesystem = system({"explosion"},
 		function(e)
-			e.explosion.radius +=1
+
+			local explosion_increment_rate = 2
+
+			e.explosion.radius +=explosion_increment_rate
+		end
+	),
+	smokeupdatesystem = system({"smoke"},
+		function(e)
+
+			local smoke_decrement_rate = 0.5
+
+			e.smoke.radius -=smoke_decrement_rate
 		end
 	),
 
@@ -468,15 +502,37 @@ drawsys = {
 		end
 	),
 	-- draw sprites
-	system({"draw"},
+	system({"draw", "drawlayer"},
 		function(e)
-			-- flashing white color when entity is damaged
-			if (e.hitframe) then palforhitframe(e) end
-			e:draw()
-			if (e.hitframe) then 
-				e.hitframe = false
-				pal()
-			end
+
+			-- draw layer by layer,
+			-- higher the number, the higher the layer
+			-- for i=1, 10 do
+
+			-- 	if (e.drawlayer == i) then
+					-- flashing white color when entity is damaged
+					if (e.hitframe) then
+						palforhitframe(e)
+					end
+					e:draw() -- the important line
+					if (e.hitframe) then 
+						e.hitframe = false
+						pal()
+					end
+			-- 	end
+
+			-- end
+
+			-- if e.id.class == "enemy" then
+			-- 	e:draw()
+			-- end
+			-- if e.id.class == "player" then
+			-- 	e:draw()
+			-- end
+
+			
+
+			
 		end
 	),
 	-- diegetic ui draw
@@ -548,8 +604,24 @@ function screenshake_update()
 end
 
 function smallexplosions(_x, _y)
+	-- for i=1, 2 + flr(rnd(2) do
 	for i=1, 1 do
 		explosion(_x + rnd(c.explosion_offset_range), _y + rnd(c.explosion_offset_range))
+	end
+	puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
+end
+
+function puffsofsmoke (_maxamt, _x, _y)
+
+	local smoke_offset = 16
+
+	for i=1, _maxamt do	
+		smoke(
+			_x + rnd(smoke_offset) - 8,
+			_y + rnd(smoke_offset) - 8,
+			(rnd()-1)/5,
+			(rnd()-1)/5
+		)
 	end
 end
  
@@ -582,9 +654,10 @@ function player(_x, _y)
 		playercontrol = true,
 		keepinscreen = true,
 		shadow = true,
+		drawlayer = 5,
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
-			spr(0, self.pos.x-2, self.pos.y, 1.2, 2)
+			spr(0, self.pos.x-2+_offset, self.pos.y+_offset, 1.2, 2)
 		end
 	})
 end
@@ -613,6 +686,7 @@ function hammerhead(_x, _y)
 		weapon = true,
 		shadow = true,
 		outofboundsdestroy = true,
+		drawlayer = 5,
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
@@ -649,6 +723,7 @@ function fbullet(_x, _y)
 			loop = false,
 		},
 		outofboundsdestroy = true,
+		drawlayer = 5,
 		draw = function(self)
 			if (flr(self.ani.frame) == 0) then
 				spr(18, self.pos.x, self.pos.y, 1, 1)
@@ -666,7 +741,7 @@ function explosion(_x, _y)
 	
 	add(world,{
 		id = {
-            class = "fbullet"
+			class = "fbullet"
         },
         pos = {
             x=_x,
@@ -685,6 +760,7 @@ function explosion(_x, _y)
 		explosion = {
 			radius = 12
 		},
+		drawlayer = 10,
 		draw = function(self)
 
 			-- table in lua starts at 1, so ceil is appropriate
@@ -740,8 +816,35 @@ function explosion(_x, _y)
 
 			-- debug
 			-- print(f720t[frame], self.pos.x, self.pos.y, explosion_animation_table[1][1])
-			-- print(self.explosion.radius, self.pos.x, self.pos.y, explosion_animation_table[1][1])
+			print(self.explosion.radius, self.pos.x, self.pos.y, explosion_animation_table[1][1])
 			-- printh(frame, "log")
+		end
+	})
+end
+
+function smoke (_x, _y, _vx, _vy)
+	add(world,{
+		id = {
+			class = "fbullet"
+        },
+        pos = {
+            x = _x,
+            y = _y
+		},
+		vel = {
+			x = _vx,
+			y = _vy
+		},
+		particle = {
+			lifetime = 0,
+			lifetime_max = 30
+		},
+		smoke = {
+			radius = 12
+		},
+		drawlayer = 3,
+		draw = function(self)
+			circfill(self.pos.x, self.pos.y, self.smoke.radius, 1)
 		end
 	})
 end
