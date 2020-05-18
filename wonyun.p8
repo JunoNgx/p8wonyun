@@ -99,19 +99,30 @@ function coll(e1, e2)
     return false
 end
 
-function sortedbydrawlayeradd(_e, _system)
-	add(_e, _system)
-	if _e.drawinglayer then
-		for i=1,#_system do
-			if _e.drawinglayer < _system[i].drawinglayer then 
-				-- shift all remaining entities by one index
-				for j=#_system-1, i do
-					_system[j+1] = _system[j]
-				end
-				_system[i] = _e
-			end
-		end
-	end
+function sortedbydrawlayeradd(_system, _e)
+	add(_system, _e)
+	-- printh(#_system)
+	-- if (_e.drawlayer) then printh(_e.id.class) end
+	-- if _e.drawlayer then
+
+	-- 	-- local debuglog = ""
+	-- 	-- for i=1, #world do
+	-- 	-- 	debuglog = debuglog..world[i].id.class
+	-- 	-- end
+		
+
+	-- 	for i=1,#_system do
+	-- 		if _system[i].drawlayer then
+	-- 			if _e.drawlayer < _system[i].drawlayer then 
+	-- 				-- shift all remaining entities by one index
+	-- 				-- for j=#_system-1, i do
+	-- 				-- 	_system[j+1] = _system[j]
+	-- 				-- end
+	-- 				_system[i] = _e
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 
 end
 
@@ -605,10 +616,10 @@ end
 
 function smallexplosions(_x, _y)
 	-- for i=1, 2 + flr(rnd(2) do
+	puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 	for i=1, 1 do
 		explosion(_x + rnd(c.explosion_offset_range), _y + rnd(c.explosion_offset_range))
 	end
-	puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 end
 
 function puffsofsmoke (_maxamt, _x, _y)
@@ -630,7 +641,7 @@ end
 
 function player(_x, _y)
 
-    add(world, {
+    sortedbydrawlayeradd(world, {
         id = {
             class = "player"
         },
@@ -664,7 +675,7 @@ end
 
 function hammerhead(_x, _y)
 
-    add(world, {
+    sortedbydrawlayeradd(world, {
         id = {
             class = "enemy",
             subclass = "hammerhead"
@@ -700,7 +711,7 @@ function fbullet(_x, _y)
 	-- local speed = -12
 	-- local speed = -3
 
-    add(world, {
+    sortedbydrawlayeradd(world, {
         id = {
             class = "fbullet"
         },
@@ -739,7 +750,7 @@ end
 
 function explosion(_x, _y)
 	
-	add(world,{
+	sortedbydrawlayeradd(world,{
 		id = {
 			class = "fbullet"
         },
@@ -795,7 +806,7 @@ function explosion(_x, _y)
 			-- )
 
 			
-			pal(7, f720t[frame])
+			pal(8, f820t[frame])
 			-- rect(
 			-- 	self.pos.x - radius + halo_offset,
 			-- 	self.pos.y - radius + halo_offset,
@@ -808,10 +819,10 @@ function explosion(_x, _y)
 				self.pos.y - self.explosion.radius + halo_offset,
 				self.pos.x + self.explosion.radius + halo_offset,
 				self.pos.y + self.explosion.radius + halo_offset,
-				7
+				8
 			)
 			
-			spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
+			-- spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
 			pal()
 
 			-- debug
@@ -823,7 +834,7 @@ function explosion(_x, _y)
 end
 
 function smoke (_x, _y, _vx, _vy)
-	add(world,{
+	sortedbydrawlayeradd(world,{
 		id = {
 			class = "fbullet"
         },
@@ -844,7 +855,7 @@ function smoke (_x, _y, _vx, _vy)
 		},
 		drawlayer = 3,
 		draw = function(self)
-			circfill(self.pos.x, self.pos.y, self.smoke.radius, 1)
+			circfill(self.pos.x, self.pos.y, self.smoke.radius, 8)
 		end
 	})
 end
