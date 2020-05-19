@@ -577,6 +577,16 @@ drawsys = {
 			end
 		end
 	),
+	
+	-- draw particles
+
+	system({"id", "draw", "drawtag"},
+		function(e)
+			if (e.drawtag == "particle_upper") then
+					e:draw() -- the important line
+			end
+		end
+	),
 
 	-- diegetic ui draw
 	system({"id", "draw"},
