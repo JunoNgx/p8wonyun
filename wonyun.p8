@@ -16,12 +16,13 @@ c = {
 	spawnrate_min = 45, -- in ticks
 	spawnrate_range = 45, -- in ticks
 
-	explosion_offset_range = 1,
+	-- explosion_offset_range = 0,
 }
 
 -- sfx note
 -- 00 player fire
--- 01 explosion
+-- 01 small explosion
+-- 02 medium explosion
 
 -- table for sprite position of explosion table
 --   	each position of the table will provide
@@ -404,11 +405,18 @@ updatesystems = {
 		function(e)
 			if e.hp == 0 then
 
-				
 				if (e.id.class == "enemy") then
-					smallexplosions(e.pos.x, e.pos.y)
-					screenshake(7, 0.3)
-					sfx(1)
+
+					if (e.id.size == "small") then
+						explosions("small", e.pos.x, e.pos.y)
+						screenshake(5, 0.3)
+						sfx(1)
+					elseif (e.id.size == "medium") then
+						explosions("medium", e.pos.x, e.pos.y)
+						screenshake(8, 0.5)
+						sfx(2)
+					end
+					
 				end
 
 			del(world, e)
@@ -514,47 +522,22 @@ drawsys = {
 			pal()
 		end
 	),
+
 	-- draw actors
 	system({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "actor") then
 
-			-- draw layer by layer,
-			-- higher the number, the higher the layer
-			-- for i=1, 10 do
+				-- flashing white color when entity is damaged
+				if (e.hitframe) then
+					palforhitframe(e)
+				end
+				e:draw() -- the important line
+				if (e.hitframe) then 
+					e.hitframe = false
+					pal()
+				end
 
-			-- 	if (e.drawlayer == i) then
-					-- flashing white color when entity is damaged
-					if (e.hitframe) then
-						palforhitframe(e)
-					end
-					e:draw() -- the important line
-					if (e.hitframe) then 
-						e.hitframe = false
-						pal()
-					end
-			-- 	end
-
-			-- end
-
-			-- if e.id.class == "enemy" then
-			-- 	e:draw()
-			-- end
-			-- if e.id.class == "player" then
-			-- 	e:draw()
-			-- end
-
-			
-
-			end
-		end
-	),
-
-	-- draw player
-	system({"id", "draw", "drawtag"},
-		function(e)
-			if (e.drawtag == "player") then
-					e:draw() -- the important line
 			end
 		end
 	),
@@ -569,20 +552,9 @@ drawsys = {
 	),
 
 	-- draw particles
-
 	system({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "particle") then
-					e:draw() -- the important line
-			end
-		end
-	),
-	
-	-- draw particles
-
-	system({"id", "draw", "drawtag"},
-		function(e)
-			if (e.drawtag == "particle_upper") then
 					e:draw() -- the important line
 			end
 		end
@@ -606,6 +578,7 @@ drawsys = {
 			end
 		end
 	),
+
 	-- draw collision boxes, for debug purposes
 	system({"pos", "box"},
 		function(e)
@@ -633,9 +606,13 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	local die = ceil(rnd(6))
+	local die = ceil(rnd(2))
 
-	hammerhead(rnd(128), -rnd(60))
+	if (die == 2) then
+		hammerhead(rnd(128), -rnd(60))
+	elseif (die == 1) then
+		riley(rnd(128), -rnd(60))
+	end
 	spawn_cooldown_reset()
 end
 
@@ -656,13 +633,28 @@ function screenshake_update()
 	end
 end
 
-function smallexplosions(_x, _y)
+function explosions(_size, _x, _y)
 	-- for i=1, 2 + flr(rnd(2) do
 		-- puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
-	for i=1, 1 do
-		explosion(_x + rnd(c.explosion_offset_range), _y + rnd(c.explosion_offset_range))
+
+	if _size == "small" then
+		-- explosion(_x + rnd(c.explosion_offset_range),
+		-- _y + rnd(c.explosion_offset_range),
+		-- 4)
+		
+		explosion(_x, _y, 6)
+		puffsofsmoke(2 + ceil(rnd(3)), _x, _y)
+
+	elseif _size == "medium" then
+		
+		-- explosion(_x + rnd(c.explosion_offset_range),
+		-- _y + rnd(c.explosion_offset_range),
+		-- 10)
+
+		explosion(_x, _y, 10)
+		puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 	end
-	puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
+	
 end
 
 function puffsofsmoke (_maxamt, _x, _y)
@@ -708,7 +700,7 @@ function player(_x, _y)
 		playercontrol = true,
 		keepinscreen = true,
 		shadow = true,
-		drawtag = "player",
+		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(0, self.pos.x-2+_offset, self.pos.y+_offset, 1.2, 2)
@@ -721,7 +713,8 @@ function hammerhead(_x, _y)
     add(world, {
         id = {
             class = "enemy",
-            subclass = "hammerhead"
+			subclass = "hammerhead",
+			size = "medium"
         },
         pos = {
             x=_x,
@@ -744,6 +737,39 @@ function hammerhead(_x, _y)
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
+		end
+    })
+end
+
+function riley(_x, _y)
+
+    add(world, {
+        id = {
+            class = "enemy",
+			subclass = "riley",
+			size = "small"
+        },
+        pos = {
+            x=_x,
+            y=_y
+        },
+        vel = {
+            x=0,
+            y=1.5
+        },
+        box = {
+            w = 10,
+            h = 10
+		},
+		hitframe = false,
+		hp = 2,
+		weapon = true,
+		shadow = true,
+		outofboundsdestroy = true,
+		drawtag = "actor",
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+			spr(34, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
 		end
     })
 end
@@ -791,7 +817,7 @@ function fbullet(_x, _y)
     })
 end
 
-function explosion(_x, _y)
+function explosion(_x, _y, _initradius)
 	
 	add(world,{
 		id = {
@@ -812,51 +838,16 @@ function explosion(_x, _y)
 			loop = false
 		},
 		explosion = {
-			radius = 10
+			radius = _initradius
 		},
-		drawtag = "particle_upper",
+		drawtag = "particle",
 		draw = function(self)
 
-			-- table in lua starts at 1, so ceil is appropriate
-			--     to find the frame in the table
-			-- local frame = ceil(self.ani.frame) 
-
-			-- local frame = ceil(self.ani.frame)
 			local frame = flr(self.ani.frame)
 			local halo_offset = -1
-			-- local radius = 12
 
-			-- spr(explosion_animation_table[ceil(self.ani.frame)][1],
-			-- 	self.pos.x + explosion_animation_table[ceil(self.ani.frame)][2], 
-			-- 	self.pos.y + explosion_animation_table[ceil(self.ani.frame)][2],
-			-- 	explosion_animation_table[ceil(self.ani.frame)][3], 
-			-- 	explosion_animation_table[ceil(self.ani.frame)][3]
-			-- )
-			
-			-- spr(explosion_animation_table[frame][1],
-			-- 	self.pos.x + explosion_animation_table[frame][2], 
-			-- 	self.pos.y + explosion_animation_table[frame][2],
-			-- 	explosion_animation_table[frame][3], 
-			-- 	explosion_animation_table[frame][3]
-			-- )
-
-			-- rect(
-			-- 	self.pos.x - self.explosion.radius + halo_offset,
-			-- 	self.pos.y - self.explosion.radius + halo_offset,
-			-- 	self.pos.x + self.explosion.radius + halo_offset,
-			-- 	self.pos.y + self.explosion.radius + halo_offset,
-			-- 	f720t[self.explosion.radius - 7]
-			-- )
-
-			
 			pal(8, f820t[frame])
-			-- rect(
-			-- 	self.pos.x - radius + halo_offset,
-			-- 	self.pos.y - radius + halo_offset,
-			-- 	self.pos.x + radius + halo_offset,
-			-- 	self.pos.y + radius + halo_offset,
-			-- 	7
-			-- )
+
 			rect(
 				self.pos.x - self.explosion.radius + halo_offset,
 				self.pos.y - self.explosion.radius + halo_offset,
@@ -865,12 +856,12 @@ function explosion(_x, _y)
 				8
 			)
 			
-			spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
+			-- spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
 			pal()
 
 			-- debug
 			-- print(f720t[frame], self.pos.x, self.pos.y, explosion_animation_table[1][1])
-			print(self.explosion.radius, self.pos.x, self.pos.y, explosion_animation_table[1][1])
+			-- print(self.explosion.radius, self.pos.x, self.pos.y, explosion_animation_table[1][1])
 			-- printh(frame, "log")
 		end
 	})
@@ -1044,4 +1035,5 @@ cccc0000000000000000000000000000000000000000000000000000000000000000000000000000
 77777777777777777777777777777777777777777777777777777777777777770000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 000100000c0510c0510c0510c0510c0510c0510c0513a0013900134001320012d001250011f0011d0011d0011f001210010000125001260012200100001000010000100001000010000100001000010000100001
-0101000024157281572b15731157311572f1572915725157211571c1571b1571b1571b1571b1571e15723157281572f1573915700107001070010700107001070010700107001070010700107001070010700107
+0001000024157281572b15731157311572f1572915725157211571c1571b1571b1571b1571b1571e15723157281572f1573915700107001070010700107001070010700107001070010700107001070010700107
+010200002115626156281562b156251561e1561f15623156281562b1562715622156271562a1562d1562c1062710623106271062a106001060010600106001060010600106001060010600106001060010600106
