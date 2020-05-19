@@ -41,7 +41,7 @@ explosion_animation_table = {
 }
 
 -- fade table from color 8 to 0 in 16 steps
-f820t = {8,8,8,8,8,2,2,2,2,2,2,0,0,0,0}
+f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
 f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
 -- function sum(x, y)
@@ -103,26 +103,28 @@ function sortedbydrawlayeradd(_system, _e)
 	add(_system, _e)
 	-- printh(#_system)
 	-- if (_e.drawlayer) then printh(_e.id.class) end
-	-- if _e.drawlayer then
-
+	if _e.drawlayer then
+		-- printh(_e.id.class.._e.drawlayer)
+		
 	-- 	-- local debuglog = ""
 	-- 	-- for i=1, #world do
 	-- 	-- 	debuglog = debuglog..world[i].id.class
 	-- 	-- end
 		
 
-	-- 	for i=1,#_system do
-	-- 		if _system[i].drawlayer then
-	-- 			if _e.drawlayer < _system[i].drawlayer then 
-	-- 				-- shift all remaining entities by one index
-	-- 				-- for j=#_system-1, i do
-	-- 				-- 	_system[j+1] = _system[j]
-	-- 				-- end
-	-- 				_system[i] = _e
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
+		for i=1,#_system do
+			if _system[i].drawlayer then
+				if _e.drawlayer < _system[i].drawlayer then 
+					-- printh(_system[i].drawlayer)
+					-- shift all remaining entities by one index
+					-- for j=#_system-1, i do
+					-- 	_system[j+1] = _system[j]
+					-- end
+					-- _system[i] = _e
+				end
+			end
+		end
+	end
 
 end
 
@@ -446,7 +448,7 @@ updatesystems = {
 	explosionupdatesystem = system({"explosion"},
 		function(e)
 
-			local explosion_increment_rate = 2
+			local explosion_increment_rate = 1.5
 
 			e.explosion.radius +=explosion_increment_rate
 		end
@@ -616,10 +618,11 @@ end
 
 function smallexplosions(_x, _y)
 	-- for i=1, 2 + flr(rnd(2) do
-	puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
+		-- puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 	for i=1, 1 do
 		explosion(_x + rnd(c.explosion_offset_range), _y + rnd(c.explosion_offset_range))
 	end
+	puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 end
 
 function puffsofsmoke (_maxamt, _x, _y)
@@ -697,7 +700,7 @@ function hammerhead(_x, _y)
 		weapon = true,
 		shadow = true,
 		outofboundsdestroy = true,
-		drawlayer = 5,
+		drawlayer = 4,
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
@@ -752,7 +755,7 @@ function explosion(_x, _y)
 	
 	sortedbydrawlayeradd(world,{
 		id = {
-			class = "fbullet"
+			class = "explosion"
         },
         pos = {
             x=_x,
@@ -769,7 +772,7 @@ function explosion(_x, _y)
 			loop = false
 		},
 		explosion = {
-			radius = 12
+			radius = 10
 		},
 		drawlayer = 10,
 		draw = function(self)
@@ -822,7 +825,7 @@ function explosion(_x, _y)
 				8
 			)
 			
-			-- spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
+			spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
 			pal()
 
 			-- debug
@@ -836,7 +839,7 @@ end
 function smoke (_x, _y, _vx, _vy)
 	sortedbydrawlayeradd(world,{
 		id = {
-			class = "fbullet"
+			class = "smoke"
         },
         pos = {
             x = _x,
