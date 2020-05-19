@@ -331,6 +331,15 @@ function transit(_state)
 	transitor.timer = 28
 end
 
+function loadprogress()
+
+end
+
+function saveprogress()
+	cartdata("wonyun")
+	
+end
+
 function _init()
 	gamestate = gameplaystate
 	gamestate.init()
@@ -569,12 +578,12 @@ drawsys = {
 					circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
 				end
 			elseif (e.id.class == "enemy") then
-				if (e.id.subclass == "hammerhead") then
+				-- if (e.id.subclass == "hammerhead") then
 					-- left gauge, hp
 					for i=1,(e.hp) do
 						circ(e.pos.x-5, e.pos.y + 16 - i*2, 0, 11)
 					end
-				end
+				-- end
 			end
 		end
 	),
@@ -606,12 +615,15 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	local die = ceil(rnd(2))
+	local die = ceil(rnd(3))
+	-- local die = 3
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
 	elseif (die == 1) then
 		riley(rnd(128), -rnd(60))
+	elseif (die == 3) then
+		dulce(rnd(128), -rnd(60))
 	end
 	spawn_cooldown_reset()
 end
@@ -770,6 +782,39 @@ function riley(_x, _y)
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(34, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
+		end
+    })
+end
+
+function dulce(_x, _y)
+
+    add(world, {
+        id = {
+            class = "enemy",
+			subclass = "dulce",
+			size = "medium"
+        },
+        pos = {
+            x=_x,
+            y=_y
+        },
+        vel = {
+            x=0,
+            y=1.5
+        },
+        box = {
+            w = 16,
+            h = 13
+		},
+		hitframe = false,
+		hp = 4,
+		weapon = true,
+		shadow = true,
+		outofboundsdestroy = true,
+		drawtag = "actor",
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+			spr(36, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
 		end
     })
 end
