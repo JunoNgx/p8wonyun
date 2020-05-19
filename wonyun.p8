@@ -99,34 +99,34 @@ function coll(e1, e2)
     return false
 end
 
-function sortedbydrawlayeradd(_system, _e)
-	add(_system, _e)
-	-- printh(#_system)
-	-- if (_e.drawlayer) then printh(_e.id.class) end
-	if _e.drawlayer then
-		-- printh(_e.id.class.._e.drawlayer)
+-- function sortedbydrawlayeradd(_system, _e)
+-- 	add(_system, _e)
+-- 	-- printh(#_system)
+-- 	-- if (_e.drawlayer) then printh(_e.id.class) end
+-- 	if _e.drawlayer then
+-- 		-- printh(_e.id.class.._e.drawlayer)
 		
-	-- 	-- local debuglog = ""
-	-- 	-- for i=1, #world do
-	-- 	-- 	debuglog = debuglog..world[i].id.class
-	-- 	-- end
+-- 	-- 	-- local debuglog = ""
+-- 	-- 	-- for i=1, #world do
+-- 	-- 	-- 	debuglog = debuglog..world[i].id.class
+-- 	-- 	-- end
 		
 
-		for i=1,#_system do
-			if _system[i].drawlayer then
-				if _e.drawlayer < _system[i].drawlayer then 
-					-- printh(_system[i].drawlayer)
-					-- shift all remaining entities by one index
-					-- for j=#_system-1, i do
-					-- 	_system[j+1] = _system[j]
-					-- end
-					-- _system[i] = _e
-				end
-			end
-		end
-	end
+-- 		for i=1,#_system do
+-- 			if _system[i].drawlayer then
+-- 				if _e.drawlayer < _system[i].drawlayer then 
+-- 					-- printh(_system[i].drawlayer)
+-- 					-- shift all remaining entities by one index
+-- 					-- for j=#_system-1, i do
+-- 					-- 	_system[j+1] = _system[j]
+-- 					-- end
+-- 					-- _system[i] = _e
+-- 				end
+-- 			end
+-- 		end
+-- 	end
 
-end
+-- end
 
 function palall(_color) -- switch all colors to target color
 	for color=1, 15 do 
@@ -514,9 +514,10 @@ drawsys = {
 			pal()
 		end
 	),
-	-- draw sprites
-	system({"draw", "drawlayer"},
+	-- draw actors
+	system({"id", "draw", "drawtag"},
 		function(e)
+			if (e.drawtag == "actor") then
 
 			-- draw layer by layer,
 			-- higher the number, the higher the layer
@@ -545,9 +546,38 @@ drawsys = {
 
 			
 
-			
+			end
 		end
 	),
+
+	-- draw player
+	system({"id", "draw", "drawtag"},
+		function(e)
+			if (e.drawtag == "player") then
+					e:draw() -- the important line
+			end
+		end
+	),
+
+	-- draw projectiles
+	system({"id", "draw", "drawtag"},
+		function(e)
+			if (e.drawtag == "projectile") then
+					e:draw() -- the important line
+			end
+		end
+	),
+
+	-- draw particles
+
+	system({"id", "draw", "drawtag"},
+		function(e)
+			if (e.drawtag == "particle") then
+					e:draw() -- the important line
+			end
+		end
+	),
+
 	-- diegetic ui draw
 	system({"id", "draw"},
 		function(e)
@@ -644,7 +674,7 @@ end
 
 function player(_x, _y)
 
-    sortedbydrawlayeradd(world, {
+    add(world, {
         id = {
             class = "player"
         },
@@ -668,7 +698,7 @@ function player(_x, _y)
 		playercontrol = true,
 		keepinscreen = true,
 		shadow = true,
-		drawlayer = 5,
+		drawtag = "player",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(0, self.pos.x-2+_offset, self.pos.y+_offset, 1.2, 2)
@@ -678,7 +708,7 @@ end
 
 function hammerhead(_x, _y)
 
-    sortedbydrawlayeradd(world, {
+    add(world, {
         id = {
             class = "enemy",
             subclass = "hammerhead"
@@ -700,7 +730,7 @@ function hammerhead(_x, _y)
 		weapon = true,
 		shadow = true,
 		outofboundsdestroy = true,
-		drawlayer = 4,
+		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
@@ -714,7 +744,7 @@ function fbullet(_x, _y)
 	-- local speed = -12
 	-- local speed = -3
 
-    sortedbydrawlayeradd(world, {
+    add(world, {
         id = {
             class = "fbullet"
         },
@@ -737,7 +767,7 @@ function fbullet(_x, _y)
 			loop = false,
 		},
 		outofboundsdestroy = true,
-		drawlayer = 5,
+		drawtag = "projectile",
 		draw = function(self)
 			if (flr(self.ani.frame) == 0) then
 				spr(18, self.pos.x, self.pos.y, 1, 1)
@@ -753,7 +783,7 @@ end
 
 function explosion(_x, _y)
 	
-	sortedbydrawlayeradd(world,{
+	add(world,{
 		id = {
 			class = "explosion"
         },
@@ -774,7 +804,7 @@ function explosion(_x, _y)
 		explosion = {
 			radius = 10
 		},
-		drawlayer = 10,
+		drawtag = "particle_upper",
 		draw = function(self)
 
 			-- table in lua starts at 1, so ceil is appropriate
@@ -837,7 +867,7 @@ function explosion(_x, _y)
 end
 
 function smoke (_x, _y, _vx, _vy)
-	sortedbydrawlayeradd(world,{
+	add(world,{
 		id = {
 			class = "smoke"
         },
@@ -856,7 +886,7 @@ function smoke (_x, _y, _vx, _vy)
 		smoke = {
 			radius = 12
 		},
-		drawlayer = 3,
+		drawtag = "particle",
 		draw = function(self)
 			circfill(self.pos.x, self.pos.y, self.smoke.radius, 8)
 		end
