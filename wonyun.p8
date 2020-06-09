@@ -508,6 +508,7 @@ updatesystems = {
 
 			if (btn(5)) then
 				if (e.playerweapon.cooldown <=0) then
+					screenshake(2, 0.1)
 					sfx(0)
 					fbullet(e.pos.x, e.pos.y-5)
 					e.playerweapon.cooldown = c.player_firerate
@@ -632,8 +633,14 @@ screenshake_timer = 0
 screenshake_mag = 0
 
 function screenshake(_magnitude, _lengthinseconds)
-	screenshake_timer = _lengthinseconds * 30
-	screenshake_mag = _magnitude
+
+	if (_lengthinseconds > screenshake_timer) then
+		screenshake_timer = _lengthinseconds * 30
+	end
+
+	if (_magnitude > screenshake_mag) then
+		screenshake_mag = _magnitude
+	end
 end
 
 function screenshake_update()
@@ -642,6 +649,7 @@ function screenshake_update()
 		camera(rnd(screenshake_mag),rnd(screenshake_mag))
 	else
 		camera()
+		screenshake_mag = 0
 	end
 end
 
@@ -878,7 +886,7 @@ function explosion(_x, _y, _initradius)
 		},
 		ani = {
 			frame = 1, -- when working with table indexes, do not ever let it go zero
-			framerate = 1,
+			framerate = 1.5,
 			framecount = 16,
 			loop = false
 		},
