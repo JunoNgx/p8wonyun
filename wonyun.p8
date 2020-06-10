@@ -6,7 +6,7 @@ __lua__
 
 -- huge table of constants for game design tuning
 c = {
-	draw_hitbox_debug = false,
+	draw_hitbox_debug = true,
 
 	shadow_offset = 2,
 	bounds_offset = 64,
@@ -17,8 +17,8 @@ c = {
 
 	fbullet_speed = -12,
 
-	spawnrate_min = 45,
-	spawnrate_range = 45,
+	spawnrate_min = 10,
+	spawnrate_range = 10,
 
 	riley_move_vy = 1.5,
 	riley_firerate = 24,
@@ -174,7 +174,7 @@ fader = {
 	projected_time_taken = 0,
 	projected_velocity = 0,
 	table= {
-		-- position 15 is all black
+		-- position 15 is all blackju
 		-- position 0 is all bright colors
 		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 		{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
@@ -801,7 +801,7 @@ function player(_x, _y)
         },
         box = {
             w = 4,
-            h = 12,
+            h = 10,
 		},
 		hp = 4,
 		playerweapon = {
@@ -814,7 +814,7 @@ function player(_x, _y)
 		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
-			spr(0, self.pos.x-2+_offset, self.pos.y+_offset, 1.2, 2)
+			spr(0, self.pos.x-2+_offset, self.pos.y-1+_offset, 1.2, 2)
 		end
 	})
 end
@@ -959,6 +959,40 @@ function augustus(_x, _y)
 			_offset = (_offset) and _offset or 0
 			spr(38, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
 		end,
+		shadow = true
+	})
+end
+
+function koltar()
+
+	add(world, {
+		id = {
+			class = "enemy",
+			subclass = "koltar",
+			size = "medium"
+		},
+		pos = {
+			x = 64,
+			y = 64
+		},
+		vel = {
+			x = 0,
+			y = 0
+		},
+		box = {
+			w = 48,
+			h = 48
+		},
+		hitframe = false,
+		hp = 10,
+		eweapon = {
+			type = "koltar",
+			cooldown = c.koltar_firerate
+		},
+		drawtag = "actor",
+		draw = function(self, _offset)
+
+		end
 	})
 end
 
