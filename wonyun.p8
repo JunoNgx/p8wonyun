@@ -20,19 +20,24 @@ c = {
 	spawnrate_min = 45,
 	spawnrate_range = 45,
 
+	riley_move_vy = 1.5,
 	riley_firerate = 24,
 	riley_bullet_vy = 4,
 
+	dulce_move_vy = 5,
 	dulce_firerate = 7,
 	dulce_bullet_vy = 2,
 
+	augustus_move_vy = 1,
 	augustus_firerate = 30,
 	augustus_bullet_medial_vy = 2,
 	augustus_bullet_lateral_vx = 1,
 	augustus_bullet_lateral_vy = 1.5,
 
+	hammerhead_move_vy = 1,
 	hammerhead_firerate = 24,
-	hammerhead_bullet_vx = 3,
+	hammerhead_bullet_vx = 2,
+	hammerhead_bullet_vy = 1,
 
 	koltar_firerate = 24,
 
@@ -518,12 +523,25 @@ updatesystems = {
 				elseif (e.eweapon.type == "hammerhead") then
 
 					-- right firing
-					ebullet(e.pos.x+6, e.pos.y+2, c.hammerhead_bullet_vx, 0)
-					ebullet(e.pos.x+6, e.pos.y+12, c.hammerhead_bullet_vx, 0)
+					ebullet(e.pos.x+6, e.pos.y+2, 
+						c.hammerhead_bullet_vx,
+						c.hammerhead_bullet_vy
+					)
+					ebullet(e.pos.x+6, e.pos.y+12,
+						c.hammerhead_bullet_vx,
+						c.hammerhead_bullet_vy
+					)
 
 					-- left firing
-					ebullet(e.pos.x-2, e.pos.y+2, -c.hammerhead_bullet_vx, 0)
-					ebullet(e.pos.x-2, e.pos.y+12, -c.hammerhead_bullet_vx, 0)
+					ebullet(e.pos.x-2, e.pos.y+2,
+						-c.hammerhead_bullet_vx,
+						c.hammerhead_bullet_vy
+					)
+					ebullet(e.pos.x-2, e.pos.y+12,
+						-c.hammerhead_bullet_vx,
+						c.hammerhead_bullet_vy
+					)
+
 					e.eweapon.cooldown = c.hammerhead_firerate
 				elseif (e.eweapon.type == "augustus") then
 
@@ -539,6 +557,7 @@ updatesystems = {
 						c.augustus_bullet_lateral_vx, 
 						c.augustus_bullet_lateral_vy
 					)
+
 					e.eweapon.cooldown = c.augustus_firerate
 				elseif (e.eweapon.type == "koltar") then
 				end
@@ -686,8 +705,8 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	-- local die = ceil(rnd(3))
-	local die = 4
+	local die = ceil(rnd(4))
+	-- local die = 4
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
@@ -814,7 +833,7 @@ function hammerhead(_x, _y)
         },
         vel = {
             x=0,
-            y=1
+            y=c.hammerhead_move_vy
         },
         box = {
             w = 9,
@@ -850,7 +869,7 @@ function riley(_x, _y)
         },
         vel = {
             x=0,
-            y=1.5
+            y=c.riley_move_vy
         },
         box = {
             w = 10,
@@ -886,7 +905,7 @@ function dulce(_x, _y)
         },
         vel = {
             x=0,
-            y=5
+            y=c.dulce_move_vy
         },
         box = {
             w = 16,
@@ -922,7 +941,7 @@ function augustus(_x, _y)
 		},
 		vel = {
 			x = 0,
-			y = 1
+			y = c.augustus_move_vy
 		},
 		box = {
 			w = 16,
