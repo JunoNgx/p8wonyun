@@ -6,19 +6,35 @@ __lua__
 
 -- huge table of constants for game design tuning
 c = {
+	draw_hitbox_debug = false,
+
 	shadow_offset = 2,
 	bounds_offset = 64,
 
-	player_firerate = 5,
+	player_firerate = 5, -- firerates are all in ticks
 	player_speed_fast = 6,
 	player_speed_slow = 2,
 
 	fbullet_speed = -12,
 
-	spawnrate_min = 45, -- in ticks
-	spawnrate_range = 45, -- in ticks
+	spawnrate_min = 45,
+	spawnrate_range = 45,
 
-	riley_firerate = 0.7,
+	riley_firerate = 24,
+	riley_bullet_vy = 4,
+
+	dulce_firerate = 7,
+	dulce_bullet_vy = 2,
+
+	augustus_firerate = 30,
+	augustus_bullet_medial_vy = 2,
+	augustus_bullet_lateral_vx = 1,
+	augustus_bullet_lateral_vy = 1.5,
+
+	hammerhead_firerate = 24,
+	hammerhead_bullet_vx = 3,
+
+	koltar_firerate = 24,
 
 	explosion_increment_rate = 2,
 	smoke_decrement_rate = 0.5,
@@ -281,9 +297,11 @@ gameplaystate = {
 		world = {}
 		player(64, 64)
 
-		hammerhead(64, 32)
-		hammerhead(32, 32)
-		hammerhead(96, 32)
+		-- hammerhead(64, 32)
+		-- hammerhead(32, 32)
+		-- hammerhead(96, 32)
+
+		-- augustus(64, 64)
 	
 		timer(1, function()
 			hammerhead(12, 12)
@@ -488,9 +506,45 @@ updatesystems = {
 	-- enemy weapon system
 	enemyweaponsystem = system({"eweapon"},
 		function(e)
-			if (e.eweapon == "riley") then
-				
+			if (e.eweapon.cooldown > 0) then
+				e.eweapon.cooldown -= 1;
+			else 
+				if (e.eweapon.type == "riley") then
+					ebullet(e.pos.x+3, e.pos.y+5, 0, c.riley_bullet_vy)
+					e.eweapon.cooldown = c.riley_firerate
+				elseif (e.eweapon.type == "dulce") then
+					ebullet(e.pos.x+5, e.pos.y+5, 0, c.dulce_bullet_vy)
+					e.eweapon.cooldown = c.dulce_firerate
+				elseif (e.eweapon.type == "hammerhead") then
+
+					-- right firing
+					ebullet(e.pos.x+6, e.pos.y+2, c.hammerhead_bullet_vx, 0)
+					ebullet(e.pos.x+6, e.pos.y+12, c.hammerhead_bullet_vx, 0)
+
+					-- left firing
+					ebullet(e.pos.x-2, e.pos.y+2, -c.hammerhead_bullet_vx, 0)
+					ebullet(e.pos.x-2, e.pos.y+12, -c.hammerhead_bullet_vx, 0)
+					e.eweapon.cooldown = c.hammerhead_firerate
+				elseif (e.eweapon.type == "augustus") then
+
+					-- medial bullet
+					ebullet(e.pos.x+6, e.pos.y+16, 0, c.augustus_bullet_medial_vy)
+
+					-- lateral bullets
+					ebullet(e.pos.x+5, e.pos.y+16,
+						-c.augustus_bullet_lateral_vx, 
+						c.augustus_bullet_lateral_vy
+					)
+					ebullet(e.pos.x+7, e.pos.y+16,
+						c.augustus_bullet_lateral_vx, 
+						c.augustus_bullet_lateral_vy
+					)
+					e.eweapon.cooldown = c.augustus_firerate
+				elseif (e.eweapon.type == "koltar") then
+				end
 			end
+
+
 		end
 	),
 
@@ -606,7 +660,9 @@ drawsys = {
 	-- draw collision boxes, for debug purposes
 	system({"pos", "box"},
 		function(e)
-			-- rect(e.pos.x, e.pos.y, e.pos.x + e.box.w, e.pos.y+ e.box.h, 8)
+			if (c.draw_hitbox_debug) then
+				rect(e.pos.x, e.pos.y, e.pos.x + e.box.w, e.pos.y+ e.box.h, 8)
+			end
 		end
 	),
 }
@@ -630,15 +686,17 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	local die = ceil(rnd(3))
-	-- local die = 3
+	-- local die = ceil(rnd(3))
+	local die = 4
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
 	elseif (die == 1) then
 		riley(rnd(128), -rnd(60))
 	elseif (die == 3) then
-		dulce(rnd(128), -rnd(60))
+		dulce(rnd(128), -rnd(60))	
+	elseif (die == 4) then
+		augustus(rnd(128), -rnd(60))
 	end
 	spawn_cooldown_reset()
 end
@@ -764,14 +822,17 @@ function hammerhead(_x, _y)
 		},
 		hitframe = false,
 		hp = 6,
-		weapon = true,
-		shadow = true,
+		eweapon = {
+			type = "hammerhead",
+			cooldown = c.hammerhead_firerate
+		},
 		outofboundsdestroy = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(32, self.pos.x-3+_offset, self.pos.y+_offset, 2, 2)
-		end
+		end,
+		shadow = true
     })
 end
 
@@ -797,7 +858,10 @@ function riley(_x, _y)
 		},
 		hitframe = false,
 		hp = 2,
-		eweapon = "riley",
+		eweapon = {
+			type = "riley",
+			cooldown = c.riley_firerate
+		},
 		outofboundsdestroy = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
@@ -822,7 +886,7 @@ function dulce(_x, _y)
         },
         vel = {
             x=0,
-            y=1.5
+            y=5
         },
         box = {
             w = 16,
@@ -830,15 +894,53 @@ function dulce(_x, _y)
 		},
 		hitframe = false,
 		hp = 4,
-		weapon = true,
-		shadow = true,
+		eweapon = {
+			type = "dulce",
+			cooldown = 0
+		},
 		outofboundsdestroy = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(36, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
-		end
+		end,
+		shadow = true
     })
+end
+
+function augustus(_x, _y)
+	
+	add(world, {
+		id = {
+			class = "enemy",
+			subclass = "augustus",
+			size = "medium"
+		},
+		pos = {
+			x = _x,
+			y = _y
+		},
+		vel = {
+			x = 0,
+			y = 1
+		},
+		box = {
+			w = 16,
+			h = 14,
+		},
+		hitframe = false,
+		hp = 5,
+		eweapon = {
+			type = "augustus",
+			cooldown = c.augustus_firerate
+		},
+		outofboundsdestroy = true,
+		drawtag = "actor",
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+			spr(38, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
+		end,
+	})
 end
 
 -- friendly bullet
@@ -900,13 +1002,13 @@ function ebullet(_x, _y, _vx, _vy)
 			y = _vy,
 		},
 		box = {
-			w = 3,
-			h = 3
+			w = 4,
+			h = 4
 		},
 		outofboundsdestroy = true,
 		drawtag = "projectile",
 		draw = function(self)
-			spr(20, self.pos.x, self.pos.y, 1, 1)
+			spr(20, self.pos.x-1, self.pos.y-1, 1, 1)
 		end
 	})
 end
