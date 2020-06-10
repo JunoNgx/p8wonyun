@@ -42,6 +42,18 @@ c = {
 	koltar_firerate = 24,
 
 	explosion_increment_rate = 2,
+	
+	explosion_small_amt = 4,
+	explosion_small_amt_range = 3,
+
+	explosion_medium_amt = 6,
+	explosion_medium_amt_range = 4,
+
+	explosion_large_amt = 8,
+	explosion_large_amt_range = 3,
+
+	smoke_radius_init = 8,
+	smoke_radius_range = 6,
 	smoke_decrement_rate = 0.5,
 
 	-- explosion_offset_range = 0,
@@ -447,11 +459,11 @@ updatesystems = {
 				if (e.id.class == "enemy") then
 
 					if (e.id.size == "small") then
-						explosions("small", e.pos.x, e.pos.y)
+						spawnexplosion("small", e.pos.x, e.pos.y)
 						screenshake(5, 0.3)
 						sfx(1)
 					elseif (e.id.size == "medium") then
-						explosions("medium", e.pos.x, e.pos.y)
+						spawnexplosion("medium", e.pos.x, e.pos.y)
 						screenshake(8, 0.5)
 						sfx(2)
 					end
@@ -494,17 +506,11 @@ updatesystems = {
 	),
 	explosionupdatesystem = system({"explosion"},
 		function(e)
-
-			-- local explosion_increment_rate = 2
-
 			e.explosion.radius += c.explosion_increment_rate
 		end
 	),
 	smokeupdatesystem = system({"smoke"},
 		function(e)
-
-			-- local smoke_decrement_rate = 0.5
-
 			e.smoke.radius -= c.smoke_decrement_rate
 		end
 	),
@@ -562,8 +568,6 @@ updatesystems = {
 				elseif (e.eweapon.type == "koltar") then
 				end
 			end
-
-
 		end
 	),
 
@@ -624,7 +628,7 @@ updatesystems = {
 			-- diagonal etiquette
 			if (e.vel.x * e.vel.y ~= 0) then
 				e.vel.x *= cos(0.125) -- 45 degrees
-				e.vel.y *= -sin(0.125)
+				e.vel.y *= -sin(0.125) -- y axis is inverted
 			end
 
 
@@ -638,8 +642,6 @@ updatesystems = {
 				end
 			end
 			
-
-
 		end
 	)
 }
@@ -667,7 +669,9 @@ drawsys = {
 				if (e.hitframe) then
 					palforhitframe(e)
 				end
+
 				e:draw() -- the important line
+
 				if (e.hitframe) then 
 					e.hitframe = false
 					pal()
@@ -782,7 +786,7 @@ function screenshake_update()
 	end
 end
 
-function explosions(_size, _x, _y)
+function spawnexplosion(_size, _x, _y)
 	-- for i=1, 2 + flr(rnd(2) do
 		-- puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 
@@ -792,7 +796,10 @@ function explosions(_size, _x, _y)
 		-- 4)
 		
 		explosion(_x, _y, 6)
-		puffsofsmoke(2 + ceil(rnd(3)), _x, _y)
+		puffsofsmoke(
+			c.explosion_small_amt + rnd(c.explosion_small_amt_range),
+			_x, _y
+		)
 
 	elseif _size == "medium" then
 		
@@ -801,23 +808,47 @@ function explosions(_size, _x, _y)
 		-- 10)
 
 		explosion(_x, _y, 10)
-		puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
+		puffsofsmoke(
+			c.explosion_medium_amt + rnd(c.explosion_medium_amt_range),
+			_x, _y
+		)
 	end
 	
 end
 
-function puffsofsmoke (_maxamt, _x, _y)
+function puffsofsmoke(_maxamt, _x, _y)
 
-	local smoke_offset = 16
+	-- local smoke_offset = 16
 
-	for i=1, _maxamt do	
+	-- for i=1, _maxamt do	
+	-- 	smoke(
+	-- 		_x + rnd(smoke_offset) - 8,
+	-- 		_y + rnd(smoke_offset) - 8,
+	-- 		-- (rnd()-1)/5,
+	-- 		-- (rnd()-1)/5
+	-- 		0,
+	-- 		0
+	-- 	)
+	-- end
+
+	-- for i=1, 10 do	
+	-- 	smoke(
+	-- 		_x + rnd(32) - 20,
+	-- 		_y + rnd(32) - 20,
+	-- 		0,
+	-- 		-1
+	-- 	)
+	-- end
+
+	for i=1, _maxamt do
 		smoke(
-			_x + rnd(smoke_offset) - 8,
-			_y + rnd(smoke_offset) - 8,
-			(rnd()-1)/5,
-			(rnd()-1)/5
+			_x + rnd(32) - 16,
+			_y + rnd(32) - 16,
+			0,
+			-rnd(1)
 		)
 	end
+
 end
  
 -->8
@@ -1172,7 +1203,7 @@ function smoke (_x, _y, _vx, _vy)
 			lifetime_max = 30
 		},
 		smoke = {
-			radius = 12
+			radius = c.smoke_radius_init + rnd(c.smoke_radius_range)
 		},
 		drawtag = "particle",
 		draw = function(self)
