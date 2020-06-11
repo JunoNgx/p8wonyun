@@ -7,12 +7,13 @@ __lua__
 -- huge table of constants for game design tuning
 c = {
 	-- first_gamestate = splashstate,
-	draw_hitbox_debug = false,
+	draw_hitbox_debug = true,
 
-	destination_distance = 2000, -- in ticks, 5400 ticks = 3 mins
+	destination_distance = 5400, -- in ticks, 5400 ticks = 3 mins
 
 	shadow_offset = 2,
-	bounds_offset = 64,
+	bounds_offset = 32,
+	bounds_offset_top = 64, -- a lot more things happen on top of the screen
 
 	player_firerate = 5, -- firerates are all in ticks
 	player_speed_fast = 6,
@@ -42,7 +43,10 @@ c = {
 	hammerhead_bullet_vx = 2,
 	hammerhead_bullet_vy = 1,
 
-	koltar_firerate = 24,
+	koltar_firerate = 30,
+	koltar_bullet_vel = 3,
+
+	asteroid_large_vel_max = 1.5,
 
 	explosion_increment_rate = 2,
 	
@@ -53,7 +57,7 @@ c = {
 	explosion_medium_amt_range = 4,
 
 	explosion_large_amt = 8,
-	explosion_large_amt_range = 3,
+	explosion_large_amt_range = 5,
 
 	star_radius_min = 1,
 	star_radius_range = 3,
@@ -100,7 +104,7 @@ g = {
 -- 24 messages for caption state
 -- corresponding to 24 lives
 m = {
-	"wonyun base is under siege\nthe kaedeni are invading\n\na runner ship must be sent\nfor help\n\nmothership must be alerted", --1
+	"wonyun base is under siege\nthe kaedeni are invading\n\na runner ship must be sent\nfor help\n\nmothership must be alerted\nfor reinforcement", --1
 	"if they want war\nlet's give them war\n\ngo out there\nand kill them all", --2
 	"there are so many of them\n\nbut we have no other choice", --3
 	"the dulce makes such a \ndistinct sound\n\nwe could be prepared if\nwe face them", --4
@@ -289,6 +293,14 @@ function ngon(x, y, r, n, color)
 	end
 end
 
+-- get entity's centralised x or y point
+function gecx(entity)
+	return entity.pos.x + entity.box.w/2
+end
+
+function gecy(entity)
+	return entity.pos.y + entity.box.h/2
+end
 
 -->8
 -- primary game loops
@@ -373,7 +385,7 @@ gameplaystate = {
 		-- 	hammerhead(12, 12)
 		-- end)
 
-		for i=1,25 do
+		for i=1,20 do
 			star(
 				rnd(128), rnd(128),
 				c.star_radius_min+rnd(c.star_radius_range),
@@ -381,13 +393,13 @@ gameplaystate = {
 			)
 		end
 
-		for i=1,10 do
-			star(
-				rnd(128), rnd(128),
-				c.star_radius_min+rnd(c.star_radius_range)+2,
-				"foreground"
-			)
-		end
+		-- for i=1,10 do
+		-- 	star(
+		-- 		rnd(128), rnd(128),
+		-- 		c.star_radius_min+rnd(c.star_radius_range)+2,
+		-- 		"foreground"
+		-- 	)
+		-- end
 	end,
 	update = function()
 		g.travelled_distance += 1;
@@ -544,12 +556,16 @@ updatesystems = {
 				if (e.id.class == "enemy") then
 
 					if (e.id.size == "small") then
-						spawnexplosion("small", e.pos.x, e.pos.y)
+						spawnexplosion("small", gecx(e), gecy(e))
 						screenshake(5, 0.3)
 						sfx(1)
 					elseif (e.id.size == "medium") then
-						spawnexplosion("medium", e.pos.x, e.pos.y)
+						spawnexplosion("medium", gecx(e), gecy(e))
 						screenshake(8, 0.5)
+						sfx(2)
+					elseif (e.id.size == "large") then
+						spawnexplosion("large", gecx(e), gecy(e))
+						screenshake(10, 0.5)
 						sfx(2)
 					end
 					
@@ -562,9 +578,9 @@ updatesystems = {
 	),
 	keepinscreenssys = system({"keepinscreen"},
 		function(e)
-			e.pos.x = min(e.pos.x, 128)
+			e.pos.x = min(e.pos.x, 123)
 			e.pos.x = max(e.pos.x, 0)
-			e.pos.y = min(e.pos.y, 128)
+			e.pos.y = min(e.pos.y, 123)
 			e.pos.y = max(e.pos.y, 0)
 		end
 	),
@@ -572,7 +588,7 @@ updatesystems = {
 		function(e)
 
 			if (e.pos.x > 128 + c.bounds_offset)
-				or (e.pos.x < 0 - c.bounds_offset)
+				or (e.pos.x < 0 - c.bounds_offset_top)
 				or (e.pos.y > 128 + c.bounds_offset)
 				or (e.pos.y < 0 - c.bounds_offset) then
 				
@@ -615,13 +631,14 @@ updatesystems = {
 				e.eweapon.cooldown -= 1;
 			else 
 				if (e.eweapon.type == "riley") then
-					ebullet(e.pos.x+3, e.pos.y+5, 0, c.riley_bullet_vy)
+					ebullet(gecx(e), gecy(e)+3, 0, c.riley_bullet_vy)
 					e.eweapon.cooldown = c.riley_firerate
 				elseif (e.eweapon.type == "dulce") then
-					ebullet(e.pos.x+5, e.pos.y+5, 0, c.dulce_bullet_vy)
+					ebullet(gecx(e), gecy(e), 0, c.dulce_bullet_vy)
 					e.eweapon.cooldown = c.dulce_firerate
 				elseif (e.eweapon.type == "hammerhead") then
 
+					-- going clockwise from top right
 					-- right firing
 					ebullet(e.pos.x+6, e.pos.y+2, 
 						c.hammerhead_bullet_vx,
@@ -660,6 +677,56 @@ updatesystems = {
 
 					e.eweapon.cooldown = c.augustus_firerate
 				elseif (e.eweapon.type == "koltar") then
+
+					local offset_x, offset_y = 15, 6
+
+					-- going clockwise from top
+					if (e.eweapon.firemode == 0) then
+						
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							0,
+							-c.koltar_bullet_vel
+						)
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							c.koltar_bullet_vel,
+							0
+						)
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							0,
+							c.koltar_bullet_vel
+						)
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							-c.koltar_bullet_vel,
+							0
+						)
+
+						e.eweapon.firemode = 1
+
+					elseif (e.eweapon.firemode == 1) then
+
+						local magnitude = c.koltar_bullet_vel * 0.707
+
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							magnitude, -magnitude
+						)
+
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							magnitude, magnitude
+						)
+
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							-magnitude, magnitude
+						)
+
+						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
+							-magnitude, -magnitude
+						)
+
+						e.eweapon.firemode = 0
+					end
+
+					e.eweapon.cooldown = c.koltar_firerate
+
 				end
 			end
 		end
@@ -710,7 +777,7 @@ updatesystems = {
 			-- e.vel.x = speed * cos(angle)
 			-- e.vel.y = speed * -sin(angle) -- y axis is inverted
 
-			local speed = (btn(4)) and c.player_speed_slow or c.player_speed_fast
+			local speed = (btn(5)) and c.player_speed_slow or c.player_speed_fast
 
 			e.vel.x, e.vel.y = 0, 0
 
@@ -726,7 +793,7 @@ updatesystems = {
 			end
 
 
-			if (btn(5)) then
+			if (btnp(4)) then
 				if (e.playerweapon.cooldown <=0) then
 					-- screenshake(2, 0.1)
 					sfx(0)
@@ -858,7 +925,7 @@ end
 
 function spawn()
 	local die = ceil(rnd(4))
-	-- local die = 4
+	-- local die = 5
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
@@ -868,6 +935,8 @@ function spawn()
 		dulce(rnd(128), -rnd(60))	
 	elseif (die == 4) then
 		augustus(rnd(128), -rnd(60))
+	elseif (die == 5) then
+		koltar(rnd(128), -rnd(60))
 	end
 	spawn_cooldown_reset()
 end
@@ -897,14 +966,8 @@ function screenshake_update()
 end
 
 function spawnexplosion(_size, _x, _y)
-	-- for i=1, 2 + flr(rnd(2) do
-		-- puffsofsmoke(6 + ceil(rnd(3)), _x, _y)
 
 	if _size == "small" then
-		-- explosion(_x + rnd(c.explosion_offset_range),
-		-- _y + rnd(c.explosion_offset_range),
-		-- 4)
-		
 		explosion(_x, _y, 6)
 		puffsofsmoke(
 			c.explosion_small_amt + rnd(c.explosion_small_amt_range),
@@ -912,17 +975,19 @@ function spawnexplosion(_size, _x, _y)
 		)
 
 	elseif _size == "medium" then
-		
-		-- explosion(_x + rnd(c.explosion_offset_range),
-		-- _y + rnd(c.explosion_offset_range),
-		-- 10)
-
 		explosion(_x, _y, 10)
 		puffsofsmoke(
 			c.explosion_medium_amt + rnd(c.explosion_medium_amt_range),
 			_x, _y
 		)
+	elseif _size == "large" then
+		explosion(_x, _y, 15)
+		puffsofsmoke(
+			c.explosion_large_amt + rnd(c.explosion_large_amt_range),
+			_x, _y
+		)
 	end
+
 	
 end
 
@@ -1002,6 +1067,9 @@ function player(_x, _y)
 			spr(0, self.pos.x-2+_offset, self.pos.y-2+_offset, 1.2, 2)
 
 			spr(2+flr(self.ani.frame), self.pos.x, self.pos.y+11, 1, 1)
+
+			-- local center = get_center(self)
+			circ(gecx(self), gecy(self), 1, 11)
 		end
 	})
 end
@@ -1095,7 +1163,7 @@ function dulce(_x, _y)
             y=c.dulce_move_vy
         },
         box = {
-            w = 16,
+            w = 15,
             h = 13
 		},
 		hitframe = false,
@@ -1150,35 +1218,67 @@ function augustus(_x, _y)
 	})
 end
 
-function koltar()
+function koltar(_x, _y)
 
 	add(world, {
 		id = {
 			class = "enemy",
 			subclass = "koltar",
-			size = "medium"
+			size = "large"
 		},
 		pos = {
-			x = 64,
-			y = 64
+			x = _x,
+			y = _y
 		},
 		vel = {
 			x = 0,
-			y = 0
+			y = 0.5
 		},
 		box = {
-			w = 48,
-			h = 48
+			w = 32,
+			h = 14
 		},
 		hitframe = false,
-		hp = 10,
+		hp = 5,
 		eweapon = {
 			type = "koltar",
-			cooldown = c.koltar_firerate
+			cooldown = c.koltar_firerate,
+			firemode = 0,
 		},
+		outofboundsdestroy = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+			spr(5, self.pos.x+_offset, self.pos.y+_offset, 4, 2)
+		end
+	})
+end
 
+function asteroid_large(_x, _y)
+	add(world, {
+		id = {
+			class = "asteroid",
+			size = "small"
+		},
+		pos = {
+			x = _x,
+			y = _y
+		},
+		vel = {
+			x = 0,
+			y = rnd(c.asteroid_large_vel_max)
+		},
+		box = {
+			w = 16,
+			h = 16
+		},
+		hitframe = false,
+		hp = 2,
+		outofboundsdestroy = true,
+		drawtag = "actor"
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+			spr()
 		end
 	})
 end
