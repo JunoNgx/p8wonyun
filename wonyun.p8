@@ -6,7 +6,10 @@ __lua__
 
 -- huge table of constants for game design tuning
 c = {
+	-- first_gamestate = splashstate,
 	draw_hitbox_debug = false,
+
+	destination_distance = 2000, -- in ticks, 5400 ticks = 3 mins
 
 	shadow_offset = 2,
 	bounds_offset = 64,
@@ -52,8 +55,11 @@ c = {
 	explosion_large_amt = 8,
 	explosion_large_amt_range = 3,
 
-	smoke_radius_init = 8,
-	smoke_radius_range = 6,
+	star_radius_min = 1,
+	star_radius_range = 3,
+
+	smoke_radius_init = 10,
+	smoke_radius_range = 5,
 	smoke_decrement_rate = 0.5,
 
 	-- explosion_offset_range = 0,
@@ -85,9 +91,23 @@ explosion_animation_table = {
 f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
 f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
--- function sum(x, y)
--- 	return x + y
--- end
+g = {
+	enemies_killed = 0,
+	ship_no = 2,
+	travelled_distance = 0
+}
+
+-- 24 messages for caption state
+-- corresponding to 24 lives
+m = {
+	"wonyun base is under siege\nthe kaedeni are invading\n\na runner ship must be sent\nfor help\n\nmothership must be alerted", --1
+	"if they want war\nlet's give them war\n\ngo out there\nand kill them all", --2
+	"there are so many of them\n\nbut we have no other choice", --3
+	"the dulce makes such a \ndistinct sound\n\nwe could be prepared if\nwe face them", --4
+	"i miss home\n\nbut there won't be a home\nto come back to\n\nif we fail", --5
+	"it's such a long way\n\nhow are we supposed to\nmake it", --8
+	"if you make it back\nplease tell my family that\n\ni love them" --10
+}
 
 -->8
 -- component entity system and utility functions
@@ -261,12 +281,20 @@ function fadesettrigger(_trigger)
 	end
 end
 
+function ngon(x, y, r, n, color)
+	line(color)
+	for i=0,n do
+		local angle = i/n
+		line(x + r*cos(angle), y + r*sin(angle))
+	end
+end
+
+
 -->8
 -- primary game loops
 
-gamestate = {}
-
 -- each state is an object with loop functions
+
 
 splashstate = {
 	name = "splash",
@@ -293,8 +321,8 @@ menustate = {
 		fadein()
 	end,
 	update = function()
-		if (btn(5)) then 
-			transit(gameplaystate)
+		if (btnp(5)) then 
+			transit(captionstate)
 		end
 	end,
 	draw = function()
@@ -307,24 +335,63 @@ menustate = {
 	end
 }
 
+-- This state displays a message for exposition
+-- prior to transiting into gameplay state
+captionstate = {
+	name = "caption",
+	init = function()
+		-- load progress
+		-- self.message = m[g.ship_no]
+		fadein()
+	end,
+	update = function()
+		if (btnp(5)) then 
+			transit(gameplaystate)
+		end
+	end,
+	draw = function()
+		local message = m[g.ship_no]
+		print(message, 16, 32)
+	end
+}
+
 gameplaystate = {
 	name = "gameplay",
 	init = function()
 		fadein()
 		world = {}
+		g.travelled_distance = 0
 		player(64, 64)
 
-		-- hammerhead(64, 32)
-		-- hammerhead(32, 32)
-		-- hammerhead(96, 32)
+		-- -- hammerhead(64, 32)
+		-- -- hammerhead(32, 32)
+		-- -- hammerhead(96, 32)
 
-		-- augustus(64, 64)
+		-- -- augustus(64, 64)
 	
-		timer(1, function()
-			hammerhead(12, 12)
-		end)
+		-- timer(1, function()
+		-- 	hammerhead(12, 12)
+		-- end)
+
+		for i=1,25 do
+			star(
+				rnd(128), rnd(128),
+				c.star_radius_min+rnd(c.star_radius_range),
+				"background"
+			)
+		end
+
+		for i=1,10 do
+			star(
+				rnd(128), rnd(128),
+				c.star_radius_min+rnd(c.star_radius_range)+2,
+				"foreground"
+			)
+		end
 	end,
 	update = function()
+		g.travelled_distance += 1;
+
 		spawner_update()
 		screenshake_update()
 		for key,system in pairs(updatesystems) do
@@ -337,8 +404,13 @@ gameplaystate = {
 			system(world)
 		end
 
+		local progress = 128*(g.travelled_distance/c.destination_distance)
+		line(0, 128, 0, 128 - progress, 14)
+
+		-- line(0, 128, 0, 0, 14)
 		-- debug
 		-- if (spawncooldown) then print(spawncooldown) end
+		color()
 	end
 }
 
@@ -423,18 +495,31 @@ updatesystems = {
 	animationsys = system({"ani"},
 		function(e)
 			if (e.ani.loop) then
-				if (e.ani.frame < e.ani.framecount) then
-					e.ani.frame += e.ani.framerate
-				else
+				e.ani.frame += e.ani.framerate
+				if (e.ani.frame >= e.ani.framecount) then
 					e.ani.frame = 0
 				end
 			else
-				if (e.ani.frame < e.ani.framecount - 1) then
+				if (e.ani.frame < e.ani.framecount-1) then
 					e.ani.frame += e.ani.framerate
 				end
 			end
 			
 		end
+		-- function(e)
+		-- 	if (e.ani.loop) then
+		-- 		if (e.ani.frame < e.ani.framecount) then -- so hacky
+		-- 			e.ani.frame += e.ani.framerate
+		-- 		else
+		-- 			e.ani.frame = 0
+		-- 		end
+		-- 	else
+		-- 		if (e.ani.frame < e.ani.framecount-1) then
+		-- 			e.ani.frame += e.ani.framerate
+		-- 		end
+		-- 	end
+			
+		-- end
 	),
 	collisionsys = system({"id", "pos", "box"},
 		function(e1)
@@ -512,6 +597,15 @@ updatesystems = {
 	smokeupdatesystem = system({"smoke"},
 		function(e)
 			e.smoke.radius -= c.smoke_decrement_rate
+		end
+	),
+	loopingstarsystem = system({"loopingstar"},
+		function(e)
+			if (e.pos.y > 128+c.bounds_offset) then
+				e.pos.x = rnd(128)
+				e.pos.y = -c.bounds_offset
+				e.vel.y = rnd(1.5)
+			end
 		end
 	),
 	-- enemy weapon system
@@ -651,6 +745,14 @@ updatesystems = {
 
 drawsys = {
 
+	system({"draw", "drawtag"},
+		function(e)
+			if (e.drawtag == "background") then
+				e:draw()
+			end
+		end
+	),
+
 	-- draw shadow
 	system({"draw", "shadow"},
 		function(e)
@@ -695,6 +797,14 @@ drawsys = {
 		function(e)
 			if (e.drawtag == "particle") then
 					e:draw() -- the important line
+			end
+		end
+	),
+
+	system({"draw", "drawtag"},
+		function(e)
+			if (e.drawtag == "foreground") then
+				e:draw()
 			end
 		end
 	),
@@ -878,12 +988,20 @@ function player(_x, _y)
 			cooldown = 0
 		},
 		playercontrol = true,
+		ani = {
+			frame = 0, -- when working with table indexes, do not ever let it go zero
+			framerate = 0.5,
+			framecount = 3,
+			loop = true
+		},
 		keepinscreen = true,
 		shadow = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(0, self.pos.x-2+_offset, self.pos.y-2+_offset, 1.2, 2)
+
+			spr(2+flr(self.ani.frame), self.pos.x, self.pos.y+11, 1, 1)
 		end
 	})
 end
@@ -1212,6 +1330,39 @@ function smoke (_x, _y, _vx, _vy)
 	})
 end
 
+function star(_x, _y, _radius, _drawtag) 
+
+	add(world, {
+		id = {
+			class = "star"
+		},
+		pos = {
+			x = _x,
+			y = _y
+		},
+		vel = {
+			x = 0,
+			y = rnd(1.5)
+		},
+		star = {
+			radius = _radius
+		},
+		loopingstar = true,
+		drawtag = _drawtag,
+		draw = function(self)
+			ngon(
+				self.pos.x,
+				self.pos.y,
+				flr(self.star.radius),
+				4,
+				13
+			)
+			-- color()
+			-- print("star", self.pos.x, self.pos.y)
+		end
+	})
+end
+
 function timer(_lifetimeinsec, _f) 
     add(world, {
         timer = {
@@ -1223,22 +1374,22 @@ function timer(_lifetimeinsec, _f)
 end
 
 __gfx__
-0000c00000000000ccccc000cccc0000000000000000000000000000000000000000000000000000000000800000000000088000000000000000000000000000
-000ccc0000000000ccccc000cccc0000000000000000000000000000000000000000000000000000000008880000000000888800000880000000000000000000
-000ccc0000000000ccccc000ccccc000000000000000888888888888888888888888000000000000000088888000000008800880008888000008800000000000
-000ccc0000000000cc0c0000c00cc000000000000000088888888888888888888880000000000000000888088800000088000088088008800088880000088000
-00ccccc000000000c000000000000000000000000000008888888888888888888800000000000000008880008880000088000088088008800088880000088000
+0000c00000000000aaaaa000077700000aaa00000000000000000000000000000000000000000000000000800000000000088000000000000000000000000000
+000ccc0000000000a777a00007a70000007000000000000000000000000000000000000000000000000008880000000000888800000880000000000000000000
+000ccc0000000000aa7aa00007070000000000000000888888888888888888888888000000000000000088888000000008800880008888000008800000000000
+000ccc00000000000a7a000000000000000000000000088888888888888888888880000000000000000888088800000088000088088008800088880000088000
+00ccccc0000000000070000000000000000000000000008888888888888888888800000000000000008880008880000088000088088008800088880000088000
 006ccc60000000000000000000000000000000000000000888888888888888888000000000000000088800000888000008800880008888000008800000000000
 0066c660000000000000000000000000000000000000000688888888888888886000000000000000888000000088800000888800000880000000000000000000
 06666666000000000000000000000000000000000000006668888888888888866600000000000000088800000888000000088000000000000000000000000000
-0c66566c000000000aaa0000bbbbb00000a000000000066666888888888888666660000000000000008880008880000000000000000000000000000000000000
-0c65556c00000000aaaaa000bbbbb0000aaa00000000666666688888888886666666000000000000000888088800000000000000000000000000000000000000
-cc65556cc0000000aaaaa000bbbbb000aa0aa0000006666666668888888866666666600000000000000088888000000000000000000000000000000000000000
-cc65556cc0000000aaaaa000bbbbb0000aaa00000066666666666888888666666666660000000000000008880000000000000000000000000000000000000000
-0005550000000000aaaaa000bbbbb00000a000000666666666666688886666666666666000000000000000800000000000000000000000000000000000000000
-0000000000000000aaaaa000bbbbb000000000006666666666666668866666666666666600000000000000000000000000000000000000000000000000000000
-0000000000000000aaaaa000bbbbb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000aaa0000bbbbb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0c66566c000000000aaa0000aaaaa00000a000000000066666888888888888666660000000000000008880008880000000000000000000000000000000000000
+0c65556c00000000aaaaa000aaaaa0000aaa00000000666666688888888886666666000000000000000888088800000000000000000000000000000000000000
+cc65556cc0000000aaaaa000aa7aa000aa0aa0000006666666668888888866666666600000000000000088888000000000000000000000000000000000000000
+cc65556cc0000000aaaaa000aa7aa0000aaa00000066666666666888888666666666660000000000000008880000000000000000000000000000000000000000
+0005550000000000aaaaa000aa7aa00000a000000666666666666688886666666666666000000000000000800000000000000000000000000000000000000000
+0000000000000000aaaaa000aaaaa000000000006666666666666668866666666666666600000000000000000000000000000000000000000000000000000000
+0000000000000000aaaaa000aaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000aaa0000aa0aa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00050005500050006000000000600000600000000000000660000000000000060000000000000000000000080000000000000000800000000000000000000000
 00555065560555006600000006600000660000000000006666000000000000660000000000000000000000888000000000000008080000000000000000000000
 00055566665550006660050066600000666000000000066666600000000006660000000000000000000008808800000000000080008000000000000000000000
