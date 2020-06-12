@@ -1,7 +1,7 @@
 pico-8 cartridge // http://www.pico-8.com
 version 27
 __lua__
--- project wonyun
+-- wonyun trench run
 -- by juno nguyen
 -- @junongx
 
@@ -113,7 +113,8 @@ f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
 g = {
 	ship_no = 1,
-	travelled_distance = 0
+	travelled_distance = 0,
+	carcasses = {},
 }
 
 -- 24 messages for caption state
@@ -121,15 +122,15 @@ g = {
 m = {
 	"wonyun base is under siege\nthe kaedeni are invading\n\na runner ship must be sent\nfor help\n\nmothership must be alerted\nfor reinforcement", --1
 	"if they want war\nlet's give them war\n\ngo out there\nand kill them all", -- 2
-	"sometimes, it's better to\nslown down\n\nhold  x while moving\nto slowdown", -- 3
-	"there are so many of them\n\nbut we have no other choice\n\nwe must take flight\n\nmothership depends on us", -- 4
-	"use the asteroids\nto your advantage\n\nstay behind them for cover\nand replenish ammunition\nfrom them", -- 5
-	"remember to look out\n for the indicator\nand dodge the dulce\n\ngodspeed and safe flight", -- 6
+	"sometimes, it's necessary to\nslown down\n\nhold 🅾️ while moving\nto slowdown", -- 3
+	"there are so many of them\n\nbut we have no choice\n\nwe must take flight\n\nmothership depends on us", -- 4
+	"use the asteroids\nto your advantages\n\nstay behind them for cover\nand replenish ammunition\nby staying nearby\n\nbeware of\nasteroid fragments", -- 5
+	"watch out for\nthe bomber dulce\nthey can be dangerous\n\nlook for\nthe warning indicator\n\ngodspeed and safe flight", -- 6
 	"after all these times\nthe kaedeni have finally\nsought vengeance\n\nmaybe we deserve it", -- 7
 	"i miss home\n\nbut there won't be a home\nto come back to\n\nif we fail", --8
 	"it's such a long way\n\nsuch a long long way", -- 9
-	"someone has just\ntaken their own life\nover waiting for the Kaedeni\n\nplease go cadet\n\n we don't the same fate", -- 10
-	"if you make it back\nplease tell my family that\n\ni love them", --11
+	"someone has just\ntaken their own life\n\nfalling into the hands\nof the Kaedeni\nwon't be pleasant\n\nmaybe we should do the same", -- 10
+	"if you make it back\nplease tell my family that\n\ni love them\n\nif you ever make it back\nthat is", --11
 	"this is\nour last chance\n\nelse all is lost\n\nnot just for us", --12
 }
 
@@ -140,9 +141,7 @@ m = {
 -- check if entity has all the components
 function _has(e, ks)
 	for c in all(ks) do
-        if (not e[c]) then 
-            return false
-        end
+        if not e[c] then return false end
     end
     return true
 end
@@ -152,9 +151,7 @@ end
 function system(ks, f)
     return function(system)
         for e in all(system) do
-            if _has(e, ks) then
-                f(e)
-            end
+            if _has(e, ks) then f(e) end
         end
     end
 end
@@ -163,11 +160,10 @@ end
 function getentitiesbyclass(_class, _world)
     local filtered_entities = {}
     for e in all(_world) do
-		if (e.id) then
-			if (e.id.class == _class) then
-				add(filtered_entities, e)
-			end
-        end
+		if not e.id then break end
+		if (e.id.class == _class) then
+			add(filtered_entities, e)
+		end
     end
     return filtered_entities
 end
@@ -292,11 +288,6 @@ end
 
 function fade_draw(_position)
 	-- for debug
-	-- print(fader.pos)
-	-- print(fader.projected_time_taken)
-	-- print(fader.projected_velocity)
-	-- print(fader.time)
-	-- pal()
 	for c=0,15 do
 		if flr(_position+1)>=16 then
 			pal(c,0)
@@ -317,6 +308,7 @@ function fadesettrigger(_trigger)
 	end
 end
 
+-- polygon draw, taken from wiki
 function ngon(x, y, r, n, color)
 	line(color)
 	for i=0,n do
@@ -349,9 +341,7 @@ end
 function getplayer(_world)
 	for e in all(world) do
 		if not e.id then break end
-		if (e.id.class == "player") then
-			return e
-		end
+		if (e.id.class == "player") then return e end
 	end
 	return nil
 end
@@ -360,7 +350,6 @@ end
 -- primary game loops
 
 -- each state is an object with loop functions
-
 
 splashstate = {
 	name = "splash",
@@ -395,7 +384,7 @@ menustate = {
 		if (self.page == "main") then
 			if (btnp(0)) then self.page = "credits" end
 			if (btnp(1)) then self.page = "manual" end
-			if (g.ship_no<24 and btnp(4)) then
+			if (g.ship_no<12 and btnp(4)) then
 				transit(captionstate)
 			end
 		elseif (self.page == "credits") then
@@ -409,10 +398,10 @@ menustate = {
 		-- rectfill(0,0,127,127,1)
 		if (self.page == "main") then
 			
-			print("project wonyun", 16, 16, 8)
-			print("a game by juno nguyen", 16, 24, 12)
+			print("wonyun trench run", 16, 16, 8)
+			print("a game by juno nguyen", 16, 24, 10)
 
-			local shipno = (g.ship_no<24) and g.ship_no or "no ship left"
+			local shipno = (g.ship_no<12) and g.ship_no or "no ship left"
 			if g.ship_no == 100 then shipno = "mothership is lost" end
 			print("ship no: "..shipno, 16, 40, 6)
 
@@ -447,19 +436,19 @@ menustate = {
 			spr(135, 127-8, 80, 1, 2)
 			print("manual", 94, 86, 6)
 
-			if (g.ship_no<24) then
+			if (g.ship_no<12) then
 				print("press ❎ to send", 64-#"press ❎ to send"*2, 104, 12)
 				print("another ship", 64-#"another ship"*2, 112, 12)
 			else
 				print("all is lost", 64-#"press ❎ to send"*2, 96, 12)
-				print("erase your progress", 64-#"erase your progress"*2, 104, 8)
+				print("erase your savedata", 64-#"erase your savedata"*2, 104, 8)
 				print("to try again", 64-#"to try again"*2, 112, 12)
 			end
 			
 		elseif (self.page == "credits") then
 
-			print("project wonyun", 64-#"project wonyun"*2, 16, 8)
-			print("2020", 64-#"2020"*2, 24, 7)
+			print("wonyun trench run", 64-#"wonyun trench run"*2, 16, 8)
+			print("june 2020", 64-#"June 2020"*2, 24, 7)
 
 			print("programming",
 				64-#"programming"*2,
@@ -490,8 +479,8 @@ menustate = {
 				104, 7
 			)
 
-			spr(135, 127-8, 80, 1, 2)
-			print("back", 112, 100, 7)
+			-- spr(135, 127-8, 80, 1, 2)
+			-- print("back", 112, 100, 7)
 
 		elseif (self.page == "manual") then
 			
@@ -507,20 +496,24 @@ menustate = {
 
 			print("hp\nindicator", 16, 12, 11)
 			print("ammo\nindicator\n(max: 8)", 76, 12, 12)
-			print("use ⬅️➡️⬆️⬇️ to move", 16, 32, 7)
-			print("use ⬅️⬇️⬆️⬅️\nwhile holding 🅾️\nto move slowly\n(you'll need it)", 16, 40, 7)
+			print("use ⬅️⬇️⬆️➡️ to move", 16, 32, 7)
+			print("use ⬅️⬇️⬆️➡️\nwhile holding 🅾️\nto move slowly\n(you'll need it)", 16, 40, 7)
 			print("press ❎ to fire\n(consumes ammo)", 16, 72, 7)
-			print("enclose asteroid\nto harvest ammo", 16, 88, 7)
+			print("enclose asteroids\nto harvest ammo", 16, 88, 7)
 
 			spr(64, 88, 70, 2, 2)
 			spr(0, 104, 88, 2, 2)
-			
 			line(96, 80, 108, 94, 11)
 
-			print("good luck!", 48, 110, 7)
+			line(0, 127, 0, 32, 14)
+			print("your progress\nis displayed\non the left", 12, 106, 14)
+			
 
-			spr(134, 0, 104, 1, 2)
-			print("back", 12, 110, 7)
+			print("good luck!", 72, 112, 7)
+			
+
+			-- spr(134, 0, 104, 1, 2)
+			-- print("back", 12, 110, 7)
 		end
 	end
 }
@@ -536,32 +529,41 @@ captionstate = {
 	end,
 	update = function()
 		if (btnp(4)) then 
-			transit(gameplaystate)
+			if (g.ship_no == 100) then
+				transit(menustate)
+			else
+				transit(gameplaystate)
+			end
 		end
 	end,
 	draw = function()
-		color(7)
+	
 		local message = m[g.ship_no]
-		print(message, 16, 32)
+		if (g.ship_no == 100) then
+			message = 
+				"we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
+		end
+
+		print(message, 16, 32, 7)
 	end
 }
 
-outrostate = {
-	init = function()
-		fadein()
-		g.ship_no = 100
-	end,
-	update = function()
-		if (btnp(4)) then 
-			transit(menustate)
-		end
-	end,
-	draw = function()
-		color(7)
-		local message = "we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
-		print(message, 16, 32)
-	end
-}
+-- outrostate = {
+-- 	init = function()
+-- 		fadein()
+-- 		g.ship_no = 100
+-- 	end,
+-- 	update = function()
+-- 		if (btnp(4)) then 
+-- 			transit(menustate)
+-- 		end
+-- 	end,
+-- 	draw = function()
+-- 		color(7)
+-- 		local message = "we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
+-- 		print(message, 16, 32)
+-- 	end
+-- }
 
 gameplaystate = {
 	name = "gameplay",
@@ -569,6 +571,7 @@ gameplaystate = {
 	layer12_y = -256,
 	layer2_y = 0,
 	layer3_y = 0,
+	won = false,
 	init = function(self)
 		fadein()
 		world = {}
@@ -615,6 +618,13 @@ gameplaystate = {
 
 		g.travelled_distance += 1;
 
+		if (g.travelled_distance >= c.destination_distance and not self.won) then
+			exitgameplay("win")
+			-- TODO removes keepsinbounds, playercontrol, collision
+			-- TODO mark game is won
+			self.won = true
+		end
+
 		spawner_update()
 		screenshake_update()
 		for key,system in pairs(updatesystems) do
@@ -623,7 +633,7 @@ gameplaystate = {
 	end,
 	draw = function(self)
 
-		-- background draw
+		-- background draw, floor
 		map(0, 0, 0, self.layer11_y, 16, 32)
 		map(16, 0, 0, self.layer12_y, 16, 32)
 
@@ -697,15 +707,29 @@ function transit(_state)
 	transitstate.timer = 28
 end
 
-function exitgameplay()
-	g.ship_no += 1
-	timer(2, function()
-		transit(menustate)
-	end)
+function exitgameplay(_outcome)
+	if _outcome == "lose" then
+		g.ship_no += 1
+		timer(3, function()
+			transit(menustate)
+		end)
+	elseif _outcome == "win" then
+		g.ship_no = 100
+		timer(4, function()
+			transit(captionstate)
+		end)
+	end
 end
 
+menuitem(3, "erase savedata", function()
+	dset("carcasses", nil)
+	dset("ship_no", 1)
+	run()
+end)
+
+
 function loadprogress()
-	g.ship_no = dget("ship_no") and dget("ship_no") or 1
+	g.ship_no = dget("ship_no") == 0 and 1 or dget("ship_no")
 end
 
 function saveprogress()
@@ -716,8 +740,8 @@ function _init()
 	cartdata("wonyun-junongx")
 	loadprogress()
 	-- gamestate = splashstate
-	gamestate = gameplaystate
-	-- gamestate = menustate
+	-- gamestate = gameplaystate
+	gamestate = menustate
 	-- gamestate = outrostate
 	gamestate:init()
 end
@@ -885,7 +909,7 @@ updatesystems = {
 					spawnexplosion("large", gecx(e), gecy(e))
 					screenshake(8, 0.5)
 					-- sfx(2)
-					exitgameplay()
+					exitgameplay("lose")
 				end
 
 			del(world, e)
@@ -1361,13 +1385,9 @@ function spawn_enemy()
 	-- local _difficulty = rnd_one_among({"low", "medium", "high"})
 	local _difficulty, die
 	die = rnd()
-	if (die >= 0.5) then
-		_difficulty = "medium"
-	elseif (die >= 0.75) then
-		_difficulty = "high"
-	else
-		_difficulty = "low"
-	end
+	if (die >= 0.5 and die < 0.75) then _difficulty = "medium"
+	elseif (die >= 0.75) then _difficulty = "high"
+	else _difficulty = "low" end
 
 	if (_difficulty == "low") then
 
@@ -1400,6 +1420,8 @@ function spawn_enemy()
 
 		-- extra condition for koltar
 		if (formation == "koltar" and
+			-- only spawns from 25% of the progress
+			-- not spawning twice in a row
 			(g.travelled_distance/c.destination_distance < 0.25
 			or spawn.last_spawn == "koltar")) then
 
