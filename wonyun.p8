@@ -7,7 +7,7 @@ __lua__
 -- huge table of constants for game design tuning
 c = {
 	-- first_gamestate = splashstate,
-	draw_hitbox_debug = false,
+	draw_hitbox_debug = true,
 
 	destination_distance = 5400, -- in ticks, 5400 ticks = 3 mins
 
@@ -16,8 +16,16 @@ c = {
 	bounds_offset_top = 64, -- a lot more things happen on top of the screen
 
 	player_firerate = 5, -- firerates are all in ticks
-	player_speed_fast = 6,
-	player_speed_slow = 2,
+	player_speed_fast = 5,
+	player_speed_slow = 1,
+
+	player_ammo_start = 4,
+	player_ammo_max = 8,
+
+	harvest_distance_small = 10,
+	harvest_distance_medium = 12,
+	harvest_distance_large = 15,
+	harvest_complete = 60, -- 2 seconds
 
 	fbullet_speed = -12,
 
@@ -319,6 +327,11 @@ function rnd_one_among(array)
 	local die = ceil(rnd(#array))
 
 	return array[die]
+end
+
+function distance(x1, y1, x2, y2)
+	local dx, dy = x2 - x1, y2 - y1
+	return sqrt(dx*dx + dy*dy)
 end
 
 -->8
@@ -665,6 +678,77 @@ updatesystems = {
 			end
 		end
 	),
+
+	-- harvesting system
+
+	harvesteesystem = system({"harvestee"},
+		function(e)
+			if (e.harvestee.beingharvested) then
+				-- local dr = 1
+
+				-- e.harvestee.indicator_radius += dr
+				
+				-- if e.harvestee.indicator_radius < 1 
+				-- 	or e.harvestee.indicator_radius > 3 then
+					
+				-- 	-- e.harvestee.indicator_radius -= 1
+				-- 	dr = -dr
+				-- end
+
+				if (e.harvestee.indicator_radius > 2) then
+					e.harvestee.indicator_radius -= 1
+				else
+					e.harvestee.indicator_radius += 1
+				end
+			end
+		end
+	),
+	harvestersystem = system({"harvester"},
+		function(e)
+			asteroids = getentitiesbysubclass("asteroid", world)
+
+			for a in all(asteroids) do
+				-- local harvest_distance =
+				-- 	(a.id.size == "large")
+				-- 	and c.harvest_distance_large
+				-- 	or c.harvest_distance_small
+
+				-- a.harvestee.beingharvested = 
+				-- 	distance(e.pos.x, e.pos.y, a.pos.x, a.pos.y) <= harvest_distance
+				-- 	and true
+				-- 	or false
+
+				local harvest_distance
+
+				if (a.id.size == "large") then
+					harvest_distance = c.harvest_distance_large
+				elseif (a.id.size == "medium") then
+					harvest_distance = c.harvest_distance_medium
+				elseif (a.id.size == "small") then
+					harvest_distance = c.harvest_distance_small
+				end
+
+				if (distance(gecx(e),gecy(e), gecx(a), gecy(a))
+					<= harvest_distance) then
+
+					a.harvestee.beingharvested = true
+					if (e.harvester.progress < c.harvest_complete) then
+						e.harvester.progress +=1
+					else
+						e.harvester.progress = 0
+						e.playerweapon.ammo = min(
+							e.playerweapon.ammo + 1,
+							c.player_ammo_max
+						)
+					end
+
+				else 
+					a.harvestee.beingharvested = false
+				end
+			end
+		end
+	),
+
 	-- enemy weapon system
 	enemyweaponsystem = system({"eweapon"},
 		function(e)
@@ -835,12 +919,13 @@ updatesystems = {
 
 
 			if (btnp(4)) then
-				if (e.playerweapon.cooldown <=0) then
+				if (e.playerweapon.cooldown <=0
+					and e.playerweapon.ammo > 0) then
 					-- screenshake(2, 0.1)
 					sfx(0)
 					fbullet(e.pos.x, e.pos.y-5)
 					e.playerweapon.cooldown = c.player_firerate
-					-- e.playerweapon.ammo -= 1
+					e.playerweapon.ammo -= 1
 				end
 			end
 			
@@ -920,11 +1005,27 @@ drawsys = {
 	-- diegetic ui draw
 	system({"id", "draw"},
 		function(e)
+
+			-- 
 			if (e.id.class == "player") then
-				-- -- left gauge, hp
+				-- left gauge, hp
 				for i=1,(e.hp) do
 					circ(e.pos.x-5, e.pos.y + 14 - i*2, 0, 11)
 				end
+
+				-- right gauge, ammo
+				for i=1,(e.playerweapon.ammo) do
+					circ(gecx(e)+7, gecy(e)+9-i*2, 0, 11)
+				end
+
+				-- draw harvesting indicator, a green line
+				asteroids = getentitiesbysubclass("asteroid", world)
+				for a in all(asteroids) do
+					if a.harvestee.beingharvested then
+						line(gecx(e), gecy(e), gecx(a), gecy(a), 11)
+					end
+				end
+
 			elseif (e.id.class == "enemy") then
 				-- if (e.id.subclass == "hammerhead") then
 					-- left gauge, hp
@@ -965,8 +1066,8 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	local die = ceil(rnd(6))
-	-- local die = 6
+	-- local die = ceil(rnd(6))
+	local die = 6
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
@@ -979,7 +1080,8 @@ function spawn()
 	elseif (die == 5) then
 		koltar(rnd(128), -rnd(60))
 	elseif (die == 6) then
-		asteroid("large", rnd(128), rnd(128), 0, rnd(1))
+		local _type = rnd_one_among({"small", "medium", "large"})
+		asteroid(_type, rnd(128), rnd(128), 0, rnd(2))
 	end
 	spawn_cooldown_reset()
 end
@@ -1040,7 +1142,7 @@ function spawn_from_asteroid(_type, _x, _y)
 
 	for i=1,die do
 		local _type = rnd()<chance_for_medium and "medium" or "small"
-		asteroid(_type, _x, _y, rnd(1.5)-0.75, rnd(1.5)-0.75)
+		asteroid(_type, _x, _y, rnd(3)-1.5, rnd(3)-1.5)
 	end
 end
 
@@ -1100,9 +1202,9 @@ function player(_x, _y)
             w = 4,
             h = 8,
 		},
-		hp = 4,
+		hp = 1,
 		playerweapon = {
-			ammo = 4,
+			ammo = c.player_ammo_start,
 			cooldown = 0
 		},
 		playercontrol = true,
@@ -1113,6 +1215,9 @@ function player(_x, _y)
 			loop = true
 		},
 		keepinscreen = true,
+		harvester = {
+			progress = 0
+		},
 		shadow = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
@@ -1122,7 +1227,7 @@ function player(_x, _y)
 			spr(2+flr(self.ani.frame), self.pos.x, self.pos.y+11, 1, 1)
 
 			-- local center = get_center(self)
-			circ(gecx(self), gecy(self), 1, 11)
+			-- circ(gecx(self), gecy(self), 1, 11)
 		end
 	})
 end
@@ -1312,17 +1417,17 @@ function asteroid(_type, _x, _y, _vx, _vy)
 	local _w, _h, _hp, _spr, _spr_size
 
 	if (_type == "large") then
-		_w, _h = 16, 16
+		_w, _h = 14, 14
 		_hp = 3
 		_spr = rnd_one_among({64, 66, 68, 70, 72})
 		_spr_size = 2
 	elseif  (_type == "medium") then
-		_w, _h = 12, 12
+		_w, _h = 10, 10
 		_hp = 2
 		_spr = rnd_one_among({96, 98, 100})
 		_spr_size = 2
 	elseif  (_type == "small") then
-		_w, _h = 8, 8
+		_w, _h = 7, 7
 		_hp = 1
 		_spr = rnd_one_among({102, 103, 104, 105})
 		_spr_size = 1
@@ -1350,6 +1455,10 @@ function asteroid(_type, _x, _y, _vx, _vy)
 			sprite = _spr,
 			sprite_size = _spr_size
 		},
+		harvestee = {
+			beingharvested = false,
+			indicator_radius = 0
+		},
 		hitframe = false,
 		hp = _hp,
 		outofboundsdestroy = true,
@@ -1358,7 +1467,13 @@ function asteroid(_type, _x, _y, _vx, _vy)
 			_offset = (_offset) and _offset or 0
 			spr(self.asteroid.sprite, self.pos.x, self.pos.y,
 				self.asteroid.sprite_size, self.asteroid.sprite_size)
-			-- print(self.id.size, self.pos.x, self.pos.y)
+
+			if (self.harvestee.beingharvested) then
+				circfill(gecx(self), gecy(self),
+					self.harvestee.indicator_radius, 11)
+			end
+			print(self.id.size, self.pos.x, self.pos.y)
+			-- print(self.harvestee.beingharvested, self.pos.x, self.pos.y)
 		end
 	})
 end
@@ -1505,7 +1620,7 @@ function smoke (_x, _y, _vx, _vy)
 		},
 		drawtag = "particle",
 		draw = function(self)
-			circfill(self.pos.x, self.pos.y, self.smoke.radius, 15)
+			circfill(self.pos.x, self.pos.y, self.smoke.radius, 14)
 		end
 	})
 end
