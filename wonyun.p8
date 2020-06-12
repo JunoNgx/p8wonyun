@@ -1,13 +1,13 @@
 pico-8 cartridge // http://www.pico-8.com
 version 27
 __lua__
--- Project Wonyun
--- by Juno Nguyen
+-- project wonyun
+-- by juno nguyen
 
 -- huge table of constants for game design tuning
 c = {
 	-- first_gamestate = splashstate,
-	draw_hitbox_debug = true,
+	draw_hitbox_debug = false,
 
 	destination_distance = 5400, -- in ticks, 5400 ticks = 3 mins
 
@@ -145,6 +145,18 @@ function getentitiesbyclass(_class, _world)
     for e in all(_world) do
 		if (e.id) then
 			if (e.id.class == _class) then
+				add(filter_entities, e)
+			end
+        end
+    end
+    return filter_entities
+end
+
+function getentitiesbysubclass(_subclass, _world)
+    local filter_entities = {}
+    for e in all(_world) do
+		if (e.id.subclass) then
+			if (e.id.subclass == _subclass) then
 				add(filter_entities, e)
 			end
         end
@@ -300,6 +312,13 @@ end
 
 function gecy(entity)
 	return entity.pos.y + entity.box.h/2
+end
+ 
+-- utility random method
+function rnd_one_among(array)
+	local die = ceil(rnd(#array))
+
+	return array[die]
 end
 
 -->8
@@ -535,11 +554,24 @@ updatesystems = {
 	),
 	collisionsys = system({"id", "pos", "box"},
 		function(e1)
+
+			-- friendly bullet vs enemy
 			if (e1.id.class == "fbullet") then
-				-- bullet vs enemy
 				enemies = getentitiesbyclass("enemy", world)
 
 				for e2 in all(enemies) do
+					if coll(e1, e2) then
+						del(world, e1)
+						e2.hp -= 1
+						e2.hitframe = true
+					end
+				end
+
+			-- hostile bullet vs asteroid
+			elseif (e1.id.class == "ebullet") then
+				asteroids = getentitiesbysubclass("asteroid", world)
+
+				for e2 in all(asteroids) do
 					if coll(e1, e2) then
 						del(world, e1)
 						e2.hp -= 1
@@ -559,14 +591,23 @@ updatesystems = {
 						spawnexplosion("small", gecx(e), gecy(e))
 						screenshake(5, 0.3)
 						sfx(1)
+
 					elseif (e.id.size == "medium") then
 						spawnexplosion("medium", gecx(e), gecy(e))
-						screenshake(8, 0.5)
+						screenshake(7, 0.5)
 						sfx(2)
+
+						if (e.id.subclass == "asteroid") then
+							spawn_from_asteroid("medium", gecx(e), gecy(e))
+						end
 					elseif (e.id.size == "large") then
 						spawnexplosion("large", gecx(e), gecy(e))
-						screenshake(10, 0.5)
+						screenshake(8, 0.5)
 						sfx(2)
+
+						if (e.id.subclass == "asteroid") then
+							spawn_from_asteroid("large", gecx(e), gecy(e))
+						end
 					end
 					
 				end
@@ -924,8 +965,8 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	local die = ceil(rnd(4))
-	-- local die = 5
+	local die = ceil(rnd(6))
+	-- local die = 6
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
@@ -937,6 +978,8 @@ function spawn()
 		augustus(rnd(128), -rnd(60))
 	elseif (die == 5) then
 		koltar(rnd(128), -rnd(60))
+	elseif (die == 6) then
+		asteroid("large", rnd(128), rnd(128), 0, rnd(1))
 	end
 	spawn_cooldown_reset()
 end
@@ -989,6 +1032,16 @@ function spawnexplosion(_size, _x, _y)
 	end
 
 	
+end
+
+function spawn_from_asteroid(_type, _x, _y)
+	local die = ceil(rnd(3))
+	local chance_for_medium = (_type=="large") and 0.3 or 0
+
+	for i=1,die do
+		local _type = rnd()<chance_for_medium and "medium" or "small"
+		asteroid(_type, _x, _y, rnd(1.5)-0.75, rnd(1.5)-0.75)
+	end
 end
 
 function puffsofsmoke(_maxamt, _x, _y)
@@ -1254,32 +1307,58 @@ function koltar(_x, _y)
 	})
 end
 
-function asteroid_large(_x, _y)
+function asteroid(_type, _x, _y, _vx, _vy)
+
+	local _w, _h, _hp, _spr, _spr_size
+
+	if (_type == "large") then
+		_w, _h = 16, 16
+		_hp = 3
+		_spr = rnd_one_among({64, 66, 68, 70, 72})
+		_spr_size = 2
+	elseif  (_type == "medium") then
+		_w, _h = 12, 12
+		_hp = 2
+		_spr = rnd_one_among({96, 98, 100})
+		_spr_size = 2
+	elseif  (_type == "small") then
+		_w, _h = 8, 8
+		_hp = 1
+		_spr = rnd_one_among({102, 103, 104, 105})
+		_spr_size = 1
+	end
 
 	add(world, {
 		id = {
-			class = "asteroid",
-			size = "small"
+			class = "enemy",
+			subclass = "asteroid",
+			size = _type
 		},
 		pos = {
 			x = _x,
 			y = _y
 		},
 		vel = {
-			x = 0,
-			y = rnd(c.asteroid_large_vel_max)
+			x = _vx,
+			y = _vy
 		},
 		box = {
-			w = 16,
-			h = 16
+			w = _w,
+			h = _h
+		},
+		asteroid = {
+			sprite = _spr,
+			sprite_size = _spr_size
 		},
 		hitframe = false,
-		hp = 2,
+		hp = _hp,
 		outofboundsdestroy = true,
 		drawtag = "actor",
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
-			spr()
+			spr(self.asteroid.sprite, self.pos.x, self.pos.y,
+				self.asteroid.sprite_size, self.asteroid.sprite_size)
+			-- print(self.id.size, self.pos.x, self.pos.y)
 		end
 	})
 end
@@ -1426,7 +1505,7 @@ function smoke (_x, _y, _vx, _vy)
 		},
 		drawtag = "particle",
 		draw = function(self)
-			circfill(self.pos.x, self.pos.y, self.smoke.radius, 8)
+			circfill(self.pos.x, self.pos.y, self.smoke.radius, 15)
 		end
 	})
 end
