@@ -26,6 +26,8 @@ c = {
 	player_speed_fast = 5,
 	player_speed_slow = 1,
 
+	player_starting_hp = 1,
+
 	player_ammo_start = 8,
 	player_ammo_max = 8,
 
@@ -110,8 +112,7 @@ f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
 f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
 g = {
-	enemies_killed = 0,
-	ship_no = 100,
+	ship_no = 1,
 	travelled_distance = 0
 }
 
@@ -173,12 +174,12 @@ end
 
 function getentitiesbysubclass(_subclass, _world)
     local filtered_entities = {}
-    for e in all(_world) do
-		if (e.id.subclass) then
-			if (e.id.subclass == _subclass) then
-				add(filtered_entities, e)
-			end
-        end
+	for e in all(_world) do
+		if not (e.id) then break end
+		if not (e.id.subclass) then break end
+		if (e.id.subclass == _subclass) then
+			add(filtered_entities, e)
+		end
     end
     return filtered_entities
 end
@@ -347,10 +348,12 @@ end
 
 function getplayer(_world)
 	for e in all(world) do
+		if not e.id then break end
 		if (e.id.class == "player") then
 			return e
 		end
 	end
+	return nil
 end
 
 -->8
@@ -385,6 +388,7 @@ menustate = {
 	init = function(self)
 		self.page = "main"
 		fadein()
+		saveprogress()
 	end,
 	update = function(self)
 
@@ -693,16 +697,24 @@ function transit(_state)
 	transitstate.timer = 28
 end
 
-function loadprogress()
+function exitgameplay()
+	g.ship_no += 1
+	timer(2, function()
+		transit(menustate)
+	end)
+end
 
+function loadprogress()
+	g.ship_no = dget("ship_no") and dget("ship_no") or 1
 end
 
 function saveprogress()
-	cartdata("wonyun")
-	
+	dset("ship_no", g.ship_no)
 end
 
 function _init()
+	cartdata("wonyun-junongx")
+	loadprogress()
 	-- gamestate = splashstate
 	gamestate = gameplaystate
 	-- gamestate = menustate
@@ -779,7 +791,7 @@ updatesystems = {
 			if (e1.id.class == "player") then
 
 				-- player vs ebullet
-				local ebullets = getentitiesbyclass("ebullet", world)
+				local ebullets = getentitiesbysubclass("ebullet", world)
 				for e2 in all(ebullets) do
 					if coll(e1, e2) then
 						e1.hp -=1
@@ -788,7 +800,7 @@ updatesystems = {
 					end
 				end
 
-				-- player vs asteroid
+				-- player vs asteroid/enemy
 				local enemies = getentitiesbyclass("enemy", world)
 				for e2 in all(enemies) do
 					if coll(e1, e2) then
@@ -815,7 +827,7 @@ updatesystems = {
 			-- 	end
 
 			-- friendly bullet vs enemy
-			elseif (e1.id.class == "fbullet") then
+			elseif (e1.id.subclass == "fbullet") then
 				local enemies = getentitiesbyclass("enemy", world)
 
 				for e2 in all(enemies) do
@@ -827,7 +839,7 @@ updatesystems = {
 				end
 
 			-- hostile bullet vs asteroid
-			elseif (e1.id.class == "ebullet") then
+			elseif (e1.id.subclass == "ebullet") then
 				local asteroids = getentitiesbysubclass("asteroid", world)
 
 				for e2 in all(asteroids) do
@@ -869,6 +881,11 @@ updatesystems = {
 						end
 					end
 					
+				elseif (e.id.class == "player") then
+					spawnexplosion("large", gecx(e), gecy(e))
+					screenshake(8, 0.5)
+					-- sfx(2)
+					exitgameplay()
 				end
 
 			del(world, e)
@@ -1639,7 +1656,7 @@ function player(_x, _y)
             w = 2,
             h = 6
 		},
-		hp = 4,
+		hp = c.player_starting_hp,
 		playerweapon = {
 			ammo = c.player_ammo_start,
 			cooldown = 0
@@ -1929,7 +1946,8 @@ function fbullet(_x, _y)
 
     add(world, {
         id = {
-            class = "fbullet"
+			class = "bullet",
+			subclass = "fbullet"
         },
         pos = {
             x=_x,
@@ -1971,7 +1989,8 @@ function ebullet(_x, _y, _vx, _vy)
 
 	add(world, {
 		id = {
-			class = "ebullet"
+			class = "bullet",
+			subclass = "ebullet"
 		},
 		pos = {
 			x = _x,
