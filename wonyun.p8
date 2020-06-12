@@ -15,8 +15,8 @@ c = {
 	bounds_offset = 32,
 	bounds_offset_top = 64, -- a lot more things happen on top of the screen
 
-	layer1_scroll_speed = 2,
-	layer2_scroll_speed = 3,
+	layer1_scroll_speed = 1,
+	layer2_scroll_speed = 2,
 	layer3_scroll_speed = 6,
 
 	player_firerate = 5, -- firerates are all in ticks
@@ -38,7 +38,7 @@ c = {
 
 	riley_move_vy = 1.5,
 	riley_firerate = 24,
-	riley_bullet_vy = 4,
+	riley_bullet_vel = 1.5,
 
 	dulce_move_vy = 5,
 	dulce_firerate = 7,
@@ -338,6 +338,14 @@ function distance(x1, y1, x2, y2)
 	return sqrt(dx*dx + dy*dy)
 end
 
+function getplayer(_world)
+	for e in all(world) do
+		if (e.id.class == "player") then
+			return e
+		end
+	end
+end
+
 -->8
 -- primary game loops
 
@@ -453,9 +461,6 @@ gameplaystate = {
 		if (self.layer2_y > 128) then self.layer2_y = 0 end
 		if (self.layer3_y > 128) then self.layer3_y = 0 end
 
-		
-
-
 		g.travelled_distance += 1;
 
 		spawner_update()
@@ -481,8 +486,8 @@ gameplaystate = {
 		map(32, 0, 0, self.layer2_y, 3, 16)
 		map(32, 0, 0, self.layer2_y-128, 3, 16)
 
-		map(35, 0, 103, self.layer2_y, 3, 16)
-		map(35, 0, 103, self.layer2_y-128, 3, 16)
+		map(35, 0, 104, self.layer2_y, 3, 16)
+		map(35, 0, 104, self.layer2_y-128, 3, 16)
 
 		pal(13, 6)
 
@@ -492,8 +497,8 @@ gameplaystate = {
 		map(32, 16, 0, self.layer3_y, 3, 16)
 		map(32, 16, 0, self.layer3_y-128, 3, 16)
 		
-		map(35, 16, 103, self.layer3_y, 3, 16)
-		map(35, 16, 103, self.layer3_y-128, 3, 16)
+		map(35, 16, 104, self.layer3_y, 3, 16)
+		map(35, 16, 104, self.layer3_y-128, 3, 16)
 
 		pal()
 		
@@ -806,8 +811,18 @@ updatesystems = {
 				e.eweapon.cooldown -= 1;
 			else 
 				if (e.eweapon.type == "riley") then
-					ebullet(gecx(e), gecy(e)+3, 0, c.riley_bullet_vy)
-					e.eweapon.cooldown = c.riley_firerate
+
+					local p = getplayer(world)
+					if p then -- making sure that player exists
+						local angle, vx, vy
+						angle = atan2(gecx(p)-gecx(e), gecy(p)- gecy(e))
+						vx = c.riley_bullet_vel * cos(angle)
+						vy = c.riley_bullet_vel * sin(angle)
+
+						ebullet(gecx(e), gecy(e), vx, vy)
+						e.eweapon.cooldown = c.riley_firerate
+					end
+
 				elseif (e.eweapon.type == "dulce") then
 					ebullet(gecx(e), gecy(e), 0, c.dulce_bullet_vy)
 					e.eweapon.cooldown = c.dulce_firerate
@@ -1116,8 +1131,8 @@ function spawn_cooldown_reset()
 end
 
 function spawn()
-	local die = ceil(rnd(6))
-	-- local die = 6
+	-- local die = ceil(rnd(6))
+	local die = 1
 
 	if (die == 2) then
 		hammerhead(rnd(128), -rnd(60))
@@ -1238,7 +1253,8 @@ function player(_x, _y)
 
     add(world, {
         id = {
-            class = "player"
+			class = "player",
+			subclass = "wonyun"
         },
         pos = {
             x=_x,
@@ -1680,7 +1696,7 @@ function smoke (_x, _y, _vx, _vy)
 		},
 		drawtag = "particle",
 		draw = function(self)
-			circfill(self.pos.x, self.pos.y, self.smoke.radius, 14)
+			circfill(self.pos.x, self.pos.y, self.smoke.radius, 8)
 		end
 	})
 end
