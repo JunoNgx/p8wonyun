@@ -3,10 +3,10 @@ version 27
 __lua__
 -- project wonyun
 -- by juno nguyen
+-- @junongx
 
 -- huge table of constants for game design tuning
 c = {
-	-- first_gamestate = splashstate,
 	draw_hitbox_debug = false,
 
 	destination_distance = 2000, -- in ticks, 9000 ticks = 5 mins
@@ -95,15 +95,15 @@ c = {
 --     	e.g. frame 5 will display sprite 010 with the range of 2
 -- 		spr no, offsets, spr width/height range
 --		offset is needed as not all sprites are of equal sizes
-explosion_animation_table = {
-	{15,  0, 1},
-	{14,  0, 1},
-	{13,  0, 1},
-	{12,  0, 1},
-	{10, -4, 2},
-	{42, -4, 2},
-	{44, -4, 2},
-}
+-- explosion_animation_table = {
+-- 	{15,  0, 1},
+-- 	{14,  0, 1},
+-- 	{13,  0, 1},
+-- 	{12,  0, 1},
+-- 	{10, -4, 2},
+-- 	{42, -4, 2},
+-- 	{44, -4, 2},
+-- }
 
 -- fade table from color 8 to 0 in 16 steps
 f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
@@ -111,7 +111,7 @@ f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
 g = {
 	enemies_killed = 0,
-	ship_no = 2,
+	ship_no = 100,
 	travelled_distance = 0
 }
 
@@ -364,7 +364,7 @@ splashstate = {
 	splashtimer,
 	init = function(self)
 		fadein()
-		self.splashtimer =45
+		self.splashtimer = 45
 	end,
 	update = function(self)
 		if (self.splashtimer > 0) then
@@ -375,27 +375,149 @@ splashstate = {
 	end,
 	draw = function()
 		-- draw logo at sprite number 64
-		spr(192, 32, 48, 64, 32)
+		spr(136, 32, 48, 64, 32)
 	end
 }
 
 menustate = {
 	name = "menu",
-	init = function()
+	page = "middle",
+	init = function(self)
+		self.page = "main"
 		fadein()
 	end,
-	update = function()
-		if (btnp(5)) then 
-			transit(captionstate)
+	update = function(self)
+
+		if (self.page == "main") then
+			if (btnp(0)) then self.page = "credits" end
+			if (btnp(1)) then self.page = "manual" end
+			if (g.ship_no<24 and btnp(4)) then
+				transit(captionstate)
+			end
+		elseif (self.page == "credits") then
+			if (btnp(1) or btnp(5)) then self.page = "main" end
+		elseif (self.page == "manual") then
+			if (btnp(0) or btnp(5)) then self.page = "main" end
 		end
+
 	end,
-	draw = function()
-		print("project wonyun", 16, 16, 8)
-		print("lives left: 47", 16, 32, 7)
-		print("weapon level: 2", 16, 64, 7)
-		print("armor level: 4", 16, 72, 7)
-		print("press x to send another ship", 16, 120, 7)
-		spr(1, 12, 12)
+	draw = function(self)
+		-- rectfill(0,0,127,127,1)
+		if (self.page == "main") then
+			
+			print("project wonyun", 16, 16, 8)
+			print("a game by juno nguyen", 16, 24, 12)
+
+			local shipno = (g.ship_no<24) and g.ship_no or "no ship left"
+			if g.ship_no == 100 then shipno = "mothership is lost" end
+			print("ship no: "..shipno, 16, 40, 6)
+
+			-- grey dots representing lost ships
+			for j=1,2 do
+				for i=1,6 do
+					circfill(8+16*i, 48+10*j, 3, 5)
+				end
+			end
+
+			-- blue dots representing available ships
+			local sn = 13 - g.ship_no -- number of ships left
+
+			-- looping the loopable portion/quotient
+			for j=1,flr(sn/6) do
+				for i=1,6 do
+					circfill(8+16*i, 48+10*j, 3, 12)
+				end
+			end
+			-- looping the remainder
+			for i=1,sn % 6 do
+				circfill(8+16*i, 48+10*(flr(sn/6)+1), 3, 12)
+			end
+			-- print("lives left: 47", 16, 32, 7)
+			-- print("weapon level: 2", 16, 64, 7)
+			-- print("armor level: 4", 16, 72, 7)
+			-- print("press x to send another ship", 16, 120, 7)
+			-- spr(1, 12, 12)
+
+			spr(134, 0, 80, 1, 2)
+			print("credits", 10, 86, 6)
+			spr(135, 127-8, 80, 1, 2)
+			print("manual", 94, 86, 6)
+
+			if (g.ship_no<24) then
+				print("press ❎ to send", 64-#"press ❎ to send"*2, 104, 12)
+				print("another ship", 64-#"another ship"*2, 112, 12)
+			else
+				print("all is lost", 64-#"press ❎ to send"*2, 96, 12)
+				print("erase your progress", 64-#"erase your progress"*2, 104, 8)
+				print("to try again", 64-#"to try again"*2, 112, 12)
+			end
+			
+		elseif (self.page == "credits") then
+
+			print("project wonyun", 64-#"project wonyun"*2, 16, 8)
+			print("2020", 64-#"2020"*2, 24, 7)
+
+			print("programming",
+				64-#"programming"*2,
+				40, 7
+			)
+			print("art, and audio by",
+				64-#"art, and audio by"*2,
+				48, 7
+			)
+			print("juno nguyen",
+				64-#"juno nguyen"*2,
+				64, 8
+			)
+			print("@junongx",
+				64-#"@junongx"*2,
+				72, 12
+			)
+			print("very special thanks",
+				64-#"very special thanks"*2,
+				88, 7
+			)
+			print("rgcddev",
+				64-#"rgcddev"*2,
+				96, 12
+			)
+			print("for the inspiration",
+				64-#"for the inspiration"*2,
+				104, 7
+			)
+
+			spr(135, 127-8, 80, 1, 2)
+			print("back", 112, 100, 7)
+
+		elseif (self.page == "manual") then
+			
+			spr(0, 60, 12, 2, 2)
+
+			for i=1,4 do
+				circ(64-7, 16+9-i*2, 0, 11)
+			end
+
+			for i=1,4 do
+				circ(64+7, 16+9-i*2, 0, 12)
+			end
+
+			print("hp\nindicator", 16, 12, 11)
+			print("ammo\nindicator\n(max: 8)", 76, 12, 12)
+			print("use ⬅️➡️⬆️⬇️ to move", 16, 32, 7)
+			print("use ⬅️⬇️⬆️⬅️\nwhile holding 🅾️\nto move slowly\n(you'll need it)", 16, 40, 7)
+			print("press ❎ to fire\n(consumes ammo)", 16, 72, 7)
+			print("enclose asteroid\nto harvest ammo", 16, 88, 7)
+
+			spr(64, 88, 70, 2, 2)
+			spr(0, 104, 88, 2, 2)
+			
+			line(96, 80, 108, 94, 11)
+
+			print("good luck!", 48, 110, 7)
+
+			spr(134, 0, 104, 1, 2)
+			print("back", 12, 110, 7)
+		end
 	end
 }
 
@@ -409,12 +531,30 @@ captionstate = {
 		fadein()
 	end,
 	update = function()
-		if (btnp(5)) then 
+		if (btnp(4)) then 
 			transit(gameplaystate)
 		end
 	end,
 	draw = function()
+		color(7)
 		local message = m[g.ship_no]
+		print(message, 16, 32)
+	end
+}
+
+outrostate = {
+	init = function()
+		fadein()
+		g.ship_no = 100
+	end,
+	update = function()
+		if (btnp(4)) then 
+			transit(menustate)
+		end
+	end,
+	draw = function()
+		color(7)
+		local message = "we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
 		print(message, 16, 32)
 	end
 }
@@ -428,6 +568,7 @@ gameplaystate = {
 	init = function(self)
 		fadein()
 		world = {}
+		spawner_init()
 		g.travelled_distance = 0
 		player(64, 64)
 
@@ -519,26 +660,28 @@ gameplaystate = {
 	end
 }
 
-transitor = {
-	timer = 0,
-	destination_state,
-}
+-- transitor = {
+-- 	timer = 0,
+-- 	destination_state,
+-- }
 
 
 transitstate = {
 	name = "transit",
+	timer = 0,
+	destination_state,
 	init = function()
 
 	end,
-	update = function()
-		if (transitor.timer > 0) then
-			transitor.timer -=1
+	update = function(self)
+		if (self.timer > 0) then
+			self.timer -=1
 		else 
-			gamestate = transitor.destination_state
-			gamestate.init()
+			gamestate = self.destination_state
+			gamestate:init()
 		end
 	end,
-	draw = function()
+	draw = function(self)
 
 	end
 }
@@ -546,8 +689,8 @@ transitstate = {
 function transit(_state)
 	fadeout()
 	gamestate = transitstate
-	transitor.destination_state = _state
-	transitor.timer = 28
+	transitstate.destination_state = _state
+	transitstate.timer = 28
 end
 
 function loadprogress()
@@ -562,6 +705,8 @@ end
 function _init()
 	-- gamestate = splashstate
 	gamestate = gameplaystate
+	-- gamestate = menustate
+	-- gamestate = outrostate
 	gamestate:init()
 end
 
@@ -1165,29 +1310,32 @@ drawsys = {
 
 -->8
 -- spawner functions
-
-spawncooldown_enemy = 90 +rnd(60)
-spawncooldown_asteroid = 60 + rnd(60)
-last_spawn = ""
+spawn = {
+	cooldown_enemy,
+	cooldown_asteroid,
+	last_spawn
+}
 
 function spawner_init()
-	
+	spawn.cooldown_enemy = 90 +rnd(60)
+	spawn.cooldown_asteroid = 60 + rnd(60)
+	spawn.last_spawn = ""
 end
 
 function spawner_update()
-	if spawncooldown_enemy > 0 then
-		spawncooldown_enemy -= 1
+	if spawn.cooldown_enemy > 0 then
+		spawn.cooldown_enemy -= 1
 	else 
 		spawn_enemy()
-		spawncooldown_enemy = 
+		spawn.cooldown_enemy = 
 			c.spawnrate_enemy_min + rnd(c.spawnrate_enemy_range)
 	end
 	
-	if spawncooldown_asteroid > 0 then
-		spawncooldown_asteroid -= 1
+	if spawn.cooldown_asteroid > 0 then
+		spawn.cooldown_asteroid -= 1
 	else 
 		spawn_asteroid()
-		spawncooldown_asteroid = 
+		spawn.cooldown_asteroid = 
 			c.spawnrate_asteroid_min + rnd(c.spawnrate_asteroid_range)
 	end
 end
@@ -1211,7 +1359,7 @@ function spawn_enemy()
 		-- one riley
 		if (die == "riley") then
 			riley(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			last_spawn = "riley"
+			spawn.last_spawn = "riley"
 
 		-- -- one dulce
 		-- elseif (die == "dulce") then
@@ -1220,12 +1368,12 @@ function spawn_enemy()
 		-- one hammerhead
 		elseif (die == "hammerhead") then
 			hammerhead(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			last_spawn = "hammerhead"
+			spawn.last_spawn = "hammerhead"
 
 		-- one augustus
 		elseif (die == "augustus") then
 			augustus(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			last_spawn = "augustus"
+			spawn.last_spawn = "augustus"
 
 		end
 
@@ -1233,9 +1381,10 @@ function spawn_enemy()
 
 		local die = rnd_one_among({"riley", "dulce", "hammerhead", "koltar"})
 
+		-- extra condition for koltar
 		if (formation == "koltar" and
 			(g.travelled_distance/c.destination_distance < 0.25
-			or last_spawn == "koltar")) then
+			or spawn.last_spawn == "koltar")) then
 
 			die = rnd_one_among({"riley", "dulce", "hammerhead"})
 		end
@@ -1247,12 +1396,12 @@ function spawn_enemy()
 
 			riley(127 * 1/3 - 5, _y)
 			riley(127 * 2/3 - 5, _y)
-			last_spawn = "riley"
+			spawn.last_spawn = "riley"
 
 		-- one dulce, no formation
 		elseif (die == "dulce") then
 			dulce(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			last_spawn = "dulce"
+			spawn.last_spawn = "dulce"
 			-- sfx for dulce
 
 		-- two hammerheads
@@ -1260,7 +1409,7 @@ function spawn_enemy()
 
 			hammerhead(127 * 1/3 - 5, -rnd(c.bounds_offset_top))
 			hammerhead(127 * 2/3 - 5, -rnd(c.bounds_offset_top))
-			last_spawn = "hammerhead"
+			spawn.last_spawn = "hammerhead"
 
 		-- -- two augustus, aligned
 		-- elseif (die == "augustus") then
@@ -1274,7 +1423,7 @@ function spawn_enemy()
 		elseif (die == "koltar") then
 
 			koltar(127/2 -16, -24)
-			last_spawn = "koltar"
+			spawn.last_spawn = "koltar"
 			-- sfx for koltar?
 
 		end
@@ -1293,9 +1442,10 @@ function spawn_enemy()
 			formation = "koltar"
 		end
 
+		-- extra condition for koltar
 		if (formation == "koltar" and
 			(g.travelled_distance/c.destination_distance < 0.5
-			or last_spawn == "koltar")) then
+			or spawn.last_spawn == "koltar")) then
 			formation = rnd_one_among({"riley", "augustus"})
 		end
 
@@ -1307,7 +1457,7 @@ function spawn_enemy()
 			riley(127 * 1/4 - 5, _y)
 			riley(127 * 2/4 - 5, _y)
 			riley(127 * 3/4 - 5, _y)
-			last_spawn = "riley"
+			spawn.last_spawn = "riley"
 
 		-- two augustus
 		elseif (formation == "augustus") then
@@ -1316,7 +1466,7 @@ function spawn_enemy()
 
 			augustus(127 * 1/3 - 8, _y)
 			augustus(127 * 2/3 - 8, _y)
-			last_spawn = "augustus"
+			spawn.last_spawn = "augustus"
 			-- augustus(127 * 3/4 - 8, _y)
 
 		-- two koltar
@@ -1324,7 +1474,7 @@ function spawn_enemy()
 
 			koltar(127 * 1/3 - 16, -24)
 			koltar(127 * 2/3 - 16, -24)
-			last_spawn = "koltar"
+			spawn.last_spawn = "koltar"
 
 		end
 
