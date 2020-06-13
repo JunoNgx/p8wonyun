@@ -12,7 +12,7 @@ c = {
 	destination_distance = 2000, -- in ticks, 9000 ticks = 5 mins
 
 	shadow_offset = 2,
-	bounds_offset = 32,
+	bounds_offset_sides = 8,
 	bounds_offset_top = 64, -- a lot more things happen on top of the screen
 	bounds_offset_bottom = 8,
 	bounds_safe = 16,
@@ -24,7 +24,7 @@ c = {
 	layer3_scroll_speed = 6,
 
 	player_firerate = 5, -- firerates are all in ticks
-	player_speed_fast = 5,
+	player_speed_fast = 4,
 	player_speed_slow = 1,
 
 	player_hp_start = 4,
@@ -39,7 +39,7 @@ c = {
 
 	fbullet_speed = -12,
 
-	spawnrate_enemy_min = 45,
+	spawnrate_enemy_min = 60,
 	spawnrate_enemy_range = 45,
 	spawnrate_asteroid_min = 45,
 	spawnrate_asteroid_max = 45,
@@ -995,8 +995,8 @@ updatesystems = {
 	outofboundsdestroysys = system({"outofboundsdestroy"},
 		function(e)
 
-			if (e.pos.x > 127 + c.bounds_offset)
-				or (e.pos.x < 0 - c.bounds_offset)
+			if (e.pos.x > 127 + c.bounds_offset_sides)
+				or (e.pos.x < 0 - c.bounds_offset_sides)
 				or (e.pos.y > 127 + c.bounds_offset_bottom)
 				or (e.pos.y < 0 - c.bounds_offset_top) then
 				
@@ -1034,9 +1034,9 @@ updatesystems = {
 	),
 	loopingstarsystem = system({"loopingstar"},
 		function(e)
-			if (e.pos.y > 128+c.bounds_offset) then
+			if (e.pos.y > 128+c.bounds_offset_sides) then
 				e.pos.x = rnd(128)
-				e.pos.y = -c.bounds_offset
+				e.pos.y = -8
 				e.vel.y = rnd(1.5)
 			end
 		end
@@ -1477,16 +1477,9 @@ function rndxspawn()
 end
 
 function spawn_enemy()
-	-- local _difficulty = rnd_one_among({"low", "medium", "high"})
-	
+
 	local _difficulty, _die
 	_die = rnd()
-	-- if (die >= 0.5 and die < 0.75) then _difficulty = "medium"
-	-- elseif (die >= 0.75) then _difficulty = "high"
-	-- else _difficulty = "low" end
-	-- _difficulty = (die<0.5) and "low" or _difficulty
-	-- _difficulty = (0.5<=die and die<=0.75) and "medium" or _difficulty
-	-- _difficulty = (0.75<die) and "high" or _difficulty
 
 	if (_die<0.5) then _difficulty = "low" end
 	if (0.5<=_die and _die<=0.75) then _difficulty = "medium" end
@@ -1496,159 +1489,143 @@ function spawn_enemy()
 		_difficulty = rnd_one_among({"low", "medium"})
 	end
 
-	spawn.last.difficulty = _difficulty
-
+	-- LOW DIFFICULTY
 	if (_difficulty == "low") then
 
-		local die = rnd_one_among({"riley", "hammerhead", "augustus"})
+		local _formation = rnd_one_among({"riley", "hammerhead", "augustus"})
 
 		-- one riley
-		if (die == "riley") then
+		if (_formation == "riley") then
 			riley(rndxspawn(), rndyspawn())
-			spawn.last.unit = "riley"
-
-		-- -- one dulce
-		-- elseif (die == "dulce") then
-		-- 	dulce(2+ceil(rnd(125)), -rnd(c.bounds_offset))
 
 		-- one hammerhead
-		elseif (die == "hammerhead") then
+		elseif (_formation == "hammerhead") then
 			hammerhead(rndxspawn(), rndyspawn())
-			spawn.last.unit = "hammerhead"
 
 		-- one augustus
-		elseif (die == "augustus") then
+		elseif (_formation == "augustus") then
 			augustus(rndxspawn(), rndyspawn())
-			spawn.last.unit = "augustus"
+
 		end
 
+		spawn.last.unit = _formation
+
+	-- MEDIUM DIFFICULTY
 	elseif (_difficulty == "medium") then
 
-		local die = rnd_one_among({"riley", "dulce", "hammerhead", "koltar"})
+		local _die, _formation
+		_die = rnd()
+		
+		if (_die<0.3) then _formation = "riley" end
+		if (0.3<=_die and _die<0.6) then _formation = "dulce" end
+		if (0.6<=_die and _die<=0.9) then _formation = "hammerhead" end
+		if (0.9<_die) then _formation = "koltar" end
 
 		-- extra condition for koltar
-		if ((formation == "koltar") and
+		if ((_formation == "koltar") and
 			-- only spawns from 25% of the progress
 			-- not spawning twice in a row
 			(g.travelled_distance/c.destination_distance < 0.25
 			or spawn.last.unit == "koltar")) then
 
-			die = rnd_one_among({"riley", "dulce", "hammerhead"})
+			_formation = rnd_one_among({"riley", "dulce", "hammerhead"})
 		end
 
 		-- two rileys, aligned
-		if (die == "riley") then
-
+		if (_formation == "riley") then
 			local _y = rndyspawn()
-
 			riley(127 * 1/3 - 5, _y)
 			riley(127 * 2/3 - 5, _y)
-			spawn.last.unit = "riley"
 
 		-- one dulce, no formation
-		elseif (die == "dulce") then
+		elseif (_formation == "dulce") then
 			dulce(rndxspawn(), rndyspawn())
-			spawn.last.unit = "dulce"
-			-- sfx for dulce
 
 		-- two hammerheads
-		elseif (die == "hammerhead") then
-
+		elseif (_formation == "hammerhead") then
 			hammerhead(127 * 1/3 - 5, rndyspawn())
 			hammerhead(127 * 2/3 - 5, rndyspawn())
-			spawn.last.unit = "hammerhead"
-
-		-- -- two augustus, aligned
-		-- elseif (die == "augustus") then
-
-		-- 	local _y = -rnd(c.bounds_offset)
-
-		-- 	augustus(127 * 1/3 - 5, _y)
-		-- 	augustus(127 * 2/3 - 5, _y)
 
 		-- one koltar, middle
-		elseif (die == "koltar") then
-
+		elseif (_formation == "koltar") then
 			koltar(127/2 -16, -24)
-			spawn.last.unit = "koltar"
-			-- sfx for koltar?
 
 		end
 
+		spawn.last.unit = _formation
+
+	-- HIGH DIFFICULTY
 	elseif (_difficulty == "high") then
 
-		-- local die = rnd_one_among({1, 2, 3})
 		local _die, _formation
-
 		_die = rnd()
-		-- if (die >= 0.45) then
-		-- 	formation = "riley"
-		-- elseif (die >= 0.9) then
-		-- 	formation = "augustus"
-		-- else
-		-- 	formation = "koltar"
-		-- end
 
-		_formation = (_die<0.45) and "riley" or _formation
-		_formation = (0.45<=_die and _die<=0.9) and "augustus" or _formation
-		_formation = (0.9<_die) and "augustus" or _formation
+		if (_die<0.3) then _formation = "riley" end
+		if (0.3<=_die and _die<0.6) then _formation = "dulce" end
+		if (0.6<=_die and _die<=0.9) then _formation = "augustus" end
+		if (0.9<_die) then _formation = "koltar" end
 
 		-- extra condition for koltar
-		if (_formation == "koltar" and
-			(g.travelled_distance/c.destination_distance < 0.5
+		if (_formation == "koltar"
+			-- only spawns from 50% of the progress
+			-- not spawning twice in a row
+			and (g.travelled_distance/c.destination_distance < 0.5
 			or spawn.last.unit == "koltar")) then
-			_formation = rnd_one_among({"riley", "augustus"})
+				
+			_formation = rnd_one_among({"riley", "dulce", "augustus"})
 		end
-
 
 		-- three rileys
 		if (_formation == "riley") then
 			local _y = rndyspawn()
-
 			riley(127 * 1/4 - 5, _y+8)
 			riley(127 * 2/4 - 5, _y)
 			riley(127 * 3/4 - 5, _y+8)
-			spawn.last.unit = "riley"
+
+		-- two dulces
+		elseif (_formation == "dulce") then
+			dulce(rndxspawn(), rndyspawn())
+			dulce(rndxspawn(), rndyspawn())
 
 		-- two augustus
 		elseif (_formation == "augustus") then
-
 			local _y = rndyspawn()
-
 			augustus(127 * 1/3 - 8, _y)
 			augustus(127 * 2/3 - 8, _y)
-			spawn.last.unit = "augustus"
-			-- augustus(127 * 3/4 - 8, _y)
 
 		-- two koltar
 		elseif (_formation == "koltar") then
-
 			koltar(127 * 1/3 - 16, -24)
 			koltar(127 * 2/3 - 16, -24)
-			spawn.last.unit = "koltar"
 
 		end
 
+		spawn.last.unit = _formation
+
 	end
+
+	spawn.last.difficulty = _difficulty
+
 end
 
 function spawn_asteroid()
-	local _type, _die
+	local _type, _die, _x, _y, _vx, _vy
 	_die = rnd()
 	
-	-- if (die >= 0.75) then
-	-- 	_type = "small"
-	-- elseif (die >= 0.5) then
-	-- 	_type = "medium"
-	-- else
-	-- 	_type = "large"
-	-- end
 	_type = (_die<0.5) and "large" or _type
 	_type = (0.5<=_die and _die<=0.75) and "medium" or _type
 	_type = (0.75<_die) and "small" or _type
 
-	-- rnd_one_among({"small", "medium", "large"})
-	asteroid(_type, rnd(128), rndyspawn(), 0.2-rnd(0.4), rnd(2))
+	local 
+	_x = rnd(128)
+	_y = rndyspawn()
+	_vx = rnd(0.3)
+	_vy = rnd(2)
+
+	_vx = (_x < 64) and _vx or -_vx 
+
+	-- asteroid(_type, _x, _y, 0.2-rnd(0.4), rnd(2))
+	asteroid(_type, _x, _y, _vx, _vy)
 end
 
 function spawn_from_asteroid(_type, _x, _y)
