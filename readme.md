@@ -1,10 +1,10 @@
 # Wonyun Trench Run
 
 * **Genre**: Shump/Bullet-hell
-* **Platform**: [PICO-8](tiromoritz.github.io/pico-8-shooter/).
+* **Platform**: [PICO-8](https://www.lexaloffle.com/pico-8.php).
 * **Language/Framework**: Lua (Pico-8 subset)
 
-A videogame made in/with/for [PICO-8](tiromoritz.github.io/pico-8-shooter/). This is the complete version of [Project Wonyun](https://github.com/JunoNgx/Project-Wonyun), a [LÖVE](https://love2d.org/) project which was close to completion but, but was abandoned at some time in 2014.
+A videogame made in/with/for [PICO-8](https://www.lexaloffle.com/pico-8.php). This is the complete version of [Project Wonyun](https://github.com/JunoNgx/Project-Wonyun), a [LÖVE](https://love2d.org/) project which was close to completion but, but was abandoned at some time in 2014.
 
 **Wonyun Trench Run** focuses on a group of pilot stationed at the titular Wonyun outpost, who encountered an invasion and decided to one by one make the run through the siege to alert the mothership.
 
