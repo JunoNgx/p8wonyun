@@ -9,7 +9,8 @@ __lua__
 c = {
 	draw_hitbox_debug = false,
 
-	destination_distance = 2000, -- in ticks, 9000 ticks = 5 mins
+	-- destination_distance = 9000, -- in ticks, 9000 ticks = 5 mins
+	destination_distance = 5400,
 
 	shadow_offset = 2,
 	bounds_offset_sides = 8,
@@ -96,7 +97,8 @@ c = {
 }
 
 -- sfx note
--- 00 menu click
+
+-- 00 
 -- 01 intro audio
 -- 02 menu click
 -- 03 start game
@@ -106,17 +108,28 @@ c = {
 -- 06 player hit
 -- 07 player harvesting
 -- 08 ammo up
+-- 09 fbullet hit
 
--- 10 enemy fire
+-- 10 enemy fire -- unused
 -- 11 ebullet hit
+-- 12 dulce indicator warning
+-- 13 dulce screaming
+-- 14 riley shot
+-- 15 hammerhead shot
+-- 16 augustus shot
+-- 17 koltar screaming
+-- 18 koltar shot
 
--- 16 explosion 1
--- 17 explosion 2
--- 18 explosion 3
--- 19 explosion 4
+-- 20 explosion 1
+-- 21 explosion 2
+-- 22 explosion 3
+-- 23 explosion 4
+-- 24 explosion 4
 
--- 24 victory
--- 25 outro caption audio
+-- 25 victory
+-- 26 outro caption audio
+
+-- 27 player's death
 
 -- table for sprite position of explosion table
 --   	each position of the table will provide
@@ -150,14 +163,14 @@ g = {
 m = {
 	"wonyun base is under siege\nthe kaedeni are invading\n\na runner ship must be sent\nfor help\n\nmothership must be alerted\nfor reinforcement", --1
 	"if they want war\nlet's give them war\n\ngo out there\nand kill them all", -- 2
-	"sometimes, it's necessary to\nslown down\n\nhold 🅾️ while moving\nto slowdown", -- 3
+	"sometimes, it's necessary\nto slown down\n\nhold 🅾️ while moving\nto slowdown", -- 3
 	"there are so many of them\n\nbut we have no choice\n\nwe must take flight\n\nmothership depends on us", -- 4
 	"use the asteroids\nto your advantages\n\nstay behind them for cover\nand replenish ammunition\nby staying nearby\n\nbeware of\nasteroid fragments", -- 5
 	"watch out for\nthe bomber dulce\nthey can be dangerous\n\nlook for\nthe warning indicator\n\ngodspeed and safe flight", -- 6
 	"after all these times\nthe kaedeni have finally\nsought vengeance\n\nmaybe we deserve it", -- 7
 	"i miss home\n\nbut there won't be a home\nto come back to\n\nif we fail", --8
 	"it's such a long way\n\nsuch a long long way", -- 9
-	"someone has just\ntaken their own life\n\nfalling into the hands\nof the Kaedeni\nwon't be pleasant\n\nmaybe we should do the same", -- 10
+	"someone has just\ntaken their own life\n\nfalling into the hands\nof the kaedeni\nwon't be pleasant\n\nmaybe we should do the same", -- 10
 	"if you make it back\nplease tell my family that\n\ni love them\n\nif you ever make it back\nthat is", --11
 	"this is\nour last chance\n\nelse all is lost\n\nnot just for us", --12
 }
@@ -417,6 +430,7 @@ menustate = {
 	name = "menu",
 	page = "middle",
 	init = function(self)
+		if (g.ship_no<13) then sfx(1) end
 		self.page = "main"
 		fadein()
 		saveprogress()
@@ -426,7 +440,7 @@ menustate = {
 		if (self.page == "main") then
 			if (btnp(0)) then self.page = "credits" sfx(2) end
 			if (btnp(1)) then self.page = "manual" sfx(2) end
-			if (g.ship_no<12 and btnp(4)) then
+			if (g.ship_no<13 and btnp(4)) then
 				transit(captionstate)
 				sfx(3)
 			end
@@ -444,7 +458,7 @@ menustate = {
 			print("wonyun trench run", 16, 16, 8)
 			print("a game by juno nguyen", 16, 24, 10)
 
-			local shipno = (g.ship_no<12) and g.ship_no or "no ship left"
+			local shipno = (g.ship_no<13) and g.ship_no or "no ship left"
 			if g.ship_no == 100 then shipno = "mothership is lost" end
 			print("ship no: "..shipno, 16, 40, 6)
 
@@ -479,7 +493,7 @@ menustate = {
 			spr(135, 127-8, 80, 1, 2)
 			print("manual", 94, 86, 6)
 
-			if (g.ship_no<12) then
+			if (g.ship_no<13) then
 				print("press ❎ to send", 64-#"press ❎ to send"*2, 104, 12)
 				print("another ship", 64-#"another ship"*2, 112, 12)
 			else
@@ -568,6 +582,7 @@ captionstate = {
 	init = function()
 		-- load progress
 		-- self.message = m[g.ship_no]
+		if (g.ship_no == 100) then sfx(26) end
 		fadein()
 	end,
 	update = function()
@@ -585,7 +600,6 @@ captionstate = {
 		if (g.ship_no == 100) then
 			message = 
 				"we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
-			sfx(25)
 		end
 
 		print(message, 16, 32, 7)
@@ -616,8 +630,14 @@ gameplaystate = {
 	layer2_y = 0,
 	layer3_y = 0,
 	won = false,
+	-- -- the sole purpose of the existence of this variable
+	-- -- is to fix a bug in which enemy fire sfx plays
+	-- -- perpetually as the game fades when their fire rate
+	-- -- is cooled down
+	isrunning = true, 
 	init = function(self)
 		fadein()
+		self.isrunning = true
 		world = {}
 		spawner_init()
 		g.travelled_distance = 0
@@ -666,6 +686,7 @@ gameplaystate = {
 		-- end
 	end,
 	update = function(self)
+
 		self.layer11_y += c.layer1_scroll_speed
 		self.layer12_y += c.layer1_scroll_speed
 		self.layer2_y += c.layer2_scroll_speed
@@ -688,7 +709,7 @@ gameplaystate = {
 			p.vel.y-=7
 
 			self.won = true
-			sfx(24)
+			sfx(25)
 		end
 
 		spawner_update()
@@ -777,6 +798,7 @@ function transit(_state)
 end
 
 function exitgameplay(_outcome)
+	gameplaystate.isrunning = false
 	if _outcome == "lose" then
 		g.ship_no += 1
 		timer(3, function()
@@ -816,8 +838,8 @@ end
 function _init()
 	cartdata("wonyun-junongx")
 	loadprogress()
-	-- gamestate = splashstate
-	gamestate = gameplaystate
+	gamestate = splashstate
+	-- gamestate = gameplaystate
 	-- gamestate = menustate
 	-- gamestate = outrostate
 	gamestate:init()
@@ -967,17 +989,16 @@ updatesystems = {
 		function(e)
 			if e.hp <= 0 then
 
+				-- explosion sfx is called from spawn_explosion()
 				if (e.id.class == "enemy") then
 
 					if (e.id.size == "small") then
 						spawn_explosion("small", gecx(e), gecy(e))
 						screenshake(5, 0.3)
-						-- sfx(1)
 
 					elseif (e.id.size == "medium") then
 						spawn_explosion("medium", gecx(e), gecy(e))
 						screenshake(7, 0.5)
-						-- sfx(2)
 
 						if (e.id.subclass == "asteroid") then
 							spawn_from_asteroid("medium", gecx(e), gecy(e))
@@ -985,7 +1006,6 @@ updatesystems = {
 					elseif (e.id.size == "large") then
 						spawn_explosion("large", gecx(e), gecy(e))
 						screenshake(8, 0.5)
-						-- sfx(2)
 
 						if (e.id.subclass == "asteroid") then
 							spawn_from_asteroid("large", gecx(e), gecy(e))
@@ -1114,6 +1134,8 @@ updatesystems = {
 				-- 	and true
 				-- 	or false
 
+				if not (getplayer()) then a.harvestee.beingharvested = false end
+
 				local harvest_distance
 
 				if (a.id.size == "large") then
@@ -1160,7 +1182,7 @@ updatesystems = {
 				-- RILEY
 				if (e.eweapon.type == "riley") then
 
-					sfx(14)
+					if gameplaystate.isrunning then sfx(15) end
 
 					local p = getplayer(world)
 					if p then -- making sure that player exists
@@ -1181,7 +1203,7 @@ updatesystems = {
 
 				elseif (e.eweapon.type == "hammerhead") then
 
-					sfx(15)
+					if gameplaystate.isrunning then sfx(15) end
 
 					-- going clockwise from top right
 					-- right firing
@@ -1209,7 +1231,7 @@ updatesystems = {
 				-- AUGUSTUS
 				elseif (e.eweapon.type == "augustus") then
 
-					sfx(16)
+					if gameplaystate.isrunning then sfx(15) end
 
 					-- medial bullet
 					ebullet(e.pos.x+6, e.pos.y+16, 0, c.augustus_bullet_medial_vy)
@@ -1229,7 +1251,7 @@ updatesystems = {
 				-- KOLTAR
 				elseif (e.eweapon.type == "koltar") then
 
-					sfx(18)
+					if gameplaystate.isrunning then sfx(15) end
 					local offset_x, offset_y = 15, 6
 
 					-- going clockwise from top
@@ -1739,7 +1761,8 @@ end
 function spawn_explosion(_size, _x, _y)
 	-- consists of spark and smoke
 
-	sfx(rnd_one_among({20, 21, 22, 23, 24}))
+	-- sfx(rnd_one_among({20, 21, 22, 23, 24}))
+	sfx(22)
 
 	if _size == "small" then
 		rectspark(_x, _y, 6, 8, 8, c.spark_color_1)
@@ -2546,10 +2569,10 @@ __map__
 4a5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e4a5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e849000000096000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 010100000c0010c0010c0010c0010c0010c0010c0013a0013900134001320012d001250011f0011d0011d0011f001210010000125001260012200100001000010000100001000010000100001000010000100001
-010a0000133551f3552b3551f4551e4001e4001e4001e4001e4001a40005400094000c4000f40012400154001a40006400074000b40012400164001a4001e4002140027400034000240002400014000140000400
+010f0000105551c552285553455234552285421c5321052234507285071c507105071c507105071c5071050700507005070050700507005070050700507005070050700507005070050700507005070050700507
 01020000210571d057240572905729057150470f0372d1002c1062710623106271062a10600106001060010600106001060010600106001060010600106001060010600000000000000000000000000000000000
 01100000133551f3552b3551f45500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-011400001350013500135001350011500115001150011500105001050010500105000e5000e5000e5000e5000c5000c5000c5000c50000500005000c5030c5030050300503005030050300503005030050300503
+010800000d55213502135020e55218552115021150211502105021355210502105020e5020e5020e5020e5020c5020c5020c5020c50200502005020c5020c5020050200502005020050200502005020050200502
 01030000130631f0632b0633706318005190050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000000000000000
 010500003177625776197760d77600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006
 010300000c74718727007070070700707007070070700707007070070700707007070070700707007070070700707007070070700707007070070700707007070070700707007070070700707007070070700707
@@ -2558,7 +2581,7 @@ __sfx__
 010300002005223052270520000200002000020000200002000020000200002000020000200002000020000200002000020000200002000020000200002000020000200002000020000200002000020000200002
 01030000187530f703307530070500705007050070500705007050070500705007050070500705007050070500705007050070500705007050070500705007050070500705007050070500000000000000000000
 00050000120511e051120511e051120511e051120511e0510f0511b0511b051000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001
-010700000d4551940519455134050d4551340519455134050d45513405194551340519455134050d455004050d445004050d435004050d425004050d4151f4051340500405134050040513405004051340500405
+000900000a0210a0210a0210a0310a0310a0310a0310a0310a0310a0310a0310a0310a0210a0210a0210a0210a0110a0110a01108011070110501103011010510000100001130010000113001000011300100001
 010300001205215052140521800218002000020000218002180020000200002180021800200002000020000200002000020000200002000020000200002000020000200002000020000200002000020000200002
 010400001855511555195550050500505005050050500505005050050500505005050050500505005050050500505005050050500505005050050500505005050050500505005050050500505005050050500505
 010400001415615156121560010600106001060010600106001060010600106001060010600106001060010600106001060010600106001060010600106001060010600106001060010600106001060010600106
@@ -2570,8 +2593,8 @@ __sfx__
 000300000e5551c5551555526550205501f550245501a55024550145500f5500a550135500e5501e5500000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00030000175551b5551e5551b55612550155501d5501c550165501455015550185500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00030000195501c5501f55021550235502355023550225501e5501a55017550185501455011550125100000011500000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0011000007750097500c7500f7501175012750147500f750117501375015750177501a7501c7501e7501f75012750147501575017750197501b7501d7501f75021750237502575026730287102a7100070000700
+011400000355203552035520355206552055520555206552055520355203552035520355203552035520555205552065520355203552035520355202552025520255201552015520055200552005520055200552
 011400001357313573135731357311563115631156311563105531055310553105530e5430e5430e5330e5330c5230c5230c5130c513005130051300000000000000000000000000000000000000000000000000
 011000001805500005180550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 011000001d75500705207550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
