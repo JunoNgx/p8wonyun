@@ -15,6 +15,7 @@ c = {
 	bounds_offset = 32,
 	bounds_offset_top = 64, -- a lot more things happen on top of the screen
 	bounds_offset_bottom = 8,
+	bounds_safe = 16,
 	spawn_bound_lf = 16,
 	spawn_bound_rt = 127 - 16 *2,
 
@@ -81,6 +82,8 @@ c = {
 	smoke_radius_init = 10,
 	smoke_radius_range = 5,
 	smoke_decrement_rate = 0.5,
+
+	carcass_move_vy = 2,
 
 	-- explosion_offset_range = 0,
 }
@@ -160,7 +163,7 @@ end
 function getentitiesbyclass(_class, _world)
     local filtered_entities = {}
     for e in all(_world) do
-		if not e.id then break end
+		if not e.id then return end
 		if (e.id.class == _class) then
 			add(filtered_entities, e)
 		end
@@ -171,14 +174,28 @@ end
 function getentitiesbysubclass(_subclass, _world)
     local filtered_entities = {}
 	for e in all(_world) do
-		if not (e.id) then break end
-		if not (e.id.subclass) then break end
+		if not (e.id) then return end
+		-- if not (e.id.subclass) then return end
 		if (e.id.subclass == _subclass) then
 			add(filtered_entities, e)
 		end
     end
     return filtered_entities
 end
+
+-- function getentitiesbysubclass(_subclass, _world)
+--     local filtered_entities = {}
+-- 	for e in all(_world) do
+-- 		if (e.id and e.id.subclass) then
+-- 			-- if (e.id.subclass) then
+-- 				if (e.id.subclass == _subclass) then
+-- 					add(filtered_entities, e)
+-- 				end
+-- 			-- end
+-- 		end
+--     end
+--     return filtered_entities
+-- end
 
 -- basic AABB collision detection using pos and box components
 function coll(e1, e2)
@@ -577,7 +594,9 @@ gameplaystate = {
 		world = {}
 		spawner_init()
 		g.travelled_distance = 0
-		player(64, 64)
+		player(64, 96)
+
+		carcass(64,24)
 
 		-- -- hammerhead(64, 32)
 		-- -- hammerhead(32, 32)
@@ -669,6 +688,7 @@ gameplaystate = {
 
 		-- debug
 		print(#world)
+		print(spawn.last_spawn)
 		-- print(self.layer11_y)
 		-- print(self.layer12_y)
 	end
@@ -721,6 +741,14 @@ function exitgameplay(_outcome)
 	end
 end
 
+-- -- spawning carcasses of previous dead spots
+-- function carcass_diary_gameplay_update()
+-- 	-- TODO for carcass in all(g.carcasses) do
+-- 		-- if g.travel_distance == carcass then
+-- 			-- carcass()
+-- 		-- end
+-- end
+
 menuitem(3, "erase savedata", function()
 	dset("carcasses", nil)
 	dset("ship_no", 1)
@@ -740,8 +768,8 @@ function _init()
 	cartdata("wonyun-junongx")
 	loadprogress()
 	-- gamestate = splashstate
-	-- gamestate = gameplaystate
-	gamestate = menustate
+	gamestate = gameplaystate
+	-- gamestate = menustate
 	-- gamestate = outrostate
 	gamestate:init()
 end
@@ -929,9 +957,9 @@ updatesystems = {
 		function(e)
 
 			if (e.pos.x > 127 + c.bounds_offset)
-				or (e.pos.x < 0 - c.bounds_offset_top)
+				or (e.pos.x < 0 - c.bounds_offset)
 				or (e.pos.y > 127 + c.bounds_offset_bottom)
-				or (e.pos.y < 0 - c.bounds_offset) then
+				or (e.pos.y < 0 - c.bounds_offset_top) then
 				
 				del(world, e)
 			end
@@ -1364,6 +1392,14 @@ function spawner_init()
 end
 
 function spawner_update()
+
+	for c in all(g.carcasses) do
+		if g.travelled_distance == c.y then
+			carcass(c.x, -16)
+		end
+	end
+
+
 	if spawn.cooldown_enemy > 0 then
 		spawn.cooldown_enemy -= 1
 	else 
@@ -1381,8 +1417,17 @@ function spawner_update()
 	end
 end
 
+function rndyspawn()
+ 	return -c.bounds_safe-rnd(c.bounds_offset_top-c.bounds_safe)
+end
+
+function rndxspawn()
+	return c.bounds_safe + rnd(127 - c.bounds_safe*2)
+end
+
 function spawn_enemy()
 	-- local _difficulty = rnd_one_among({"low", "medium", "high"})
+	
 	local _difficulty, die
 	die = rnd()
 	if (die >= 0.5 and die < 0.75) then _difficulty = "medium"
@@ -1395,8 +1440,8 @@ function spawn_enemy()
 
 		-- one riley
 		if (die == "riley") then
-			riley(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			spawn.last_spawn = "riley"
+			riley(rndxspawn(), rndyspawn())
+			spawn.last_spawn = "riley-easy"
 
 		-- -- one dulce
 		-- elseif (die == "dulce") then
@@ -1404,13 +1449,13 @@ function spawn_enemy()
 
 		-- one hammerhead
 		elseif (die == "hammerhead") then
-			hammerhead(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			spawn.last_spawn = "hammerhead"
+			hammerhead(rndxspawn(), rndyspawn())
+			spawn.last_spawn = "hammerhead-easy"
 
 		-- one augustus
 		elseif (die == "augustus") then
-			augustus(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			spawn.last_spawn = "augustus"
+			augustus(rndxspawn(), rndyspawn())
+			spawn.last_spawn = "augustus-easy"
 
 		end
 
@@ -1431,24 +1476,24 @@ function spawn_enemy()
 		-- two rileys, aligned
 		if (die == "riley") then
 
-			local _y = -rnd(c.bounds_offset)
+			local _y = rndyspawn()
 
 			riley(127 * 1/3 - 5, _y)
 			riley(127 * 2/3 - 5, _y)
-			spawn.last_spawn = "riley"
+			spawn.last_spawn = "riley-medium"
 
 		-- one dulce, no formation
 		elseif (die == "dulce") then
-			dulce(c.spawn_bound_lf+rnd(c.spawn_bound_rt), -rnd(c.bounds_offset))
-			spawn.last_spawn = "dulce"
+			dulce(rndxspawn(), rndyspawn())
+			spawn.last_spawn = "dulce-medium"
 			-- sfx for dulce
 
 		-- two hammerheads
 		elseif (die == "hammerhead") then
 
-			hammerhead(127 * 1/3 - 5, -rnd(c.bounds_offset_top))
-			hammerhead(127 * 2/3 - 5, -rnd(c.bounds_offset_top))
-			spawn.last_spawn = "hammerhead"
+			hammerhead(127 * 1/3 - 5, rndyspawn())
+			hammerhead(127 * 2/3 - 5, rndyspawn())
+			spawn.last_spawn = "hammerhead-medium"
 
 		-- -- two augustus, aligned
 		-- elseif (die == "augustus") then
@@ -1491,21 +1536,21 @@ function spawn_enemy()
 
 		-- three rileys
 		if (formation == "riley") then
-			local _y = -rnd(c.bounds_offset)
+			local _y = rndyspawn()
 
-			riley(127 * 1/4 - 5, _y)
+			riley(127 * 1/4 - 5, _y+8)
 			riley(127 * 2/4 - 5, _y)
-			riley(127 * 3/4 - 5, _y)
-			spawn.last_spawn = "riley"
+			riley(127 * 3/4 - 5, _y+8)
+			spawn.last_spawn = "riley-hard"
 
 		-- two augustus
 		elseif (formation == "augustus") then
 
-			local _y = -rnd(c.bounds_offset)
+			local _y = rndyspawn()
 
 			augustus(127 * 1/3 - 8, _y)
 			augustus(127 * 2/3 - 8, _y)
-			spawn.last_spawn = "augustus"
+			spawn.last_spawn = "augustus-hard"
 			-- augustus(127 * 3/4 - 8, _y)
 
 		-- two koltar
@@ -1533,7 +1578,7 @@ function spawn_asteroid()
 	end
 
 	-- rnd_one_among({"small", "medium", "large"})
-	asteroid(_type, rnd(128), -rnd(32), 0, rnd(2))
+	asteroid(_type, rnd(128), rndyspawn(), 0, rnd(2))
 end
 
 -- function spawn_cooldown_reset()
@@ -2146,6 +2191,29 @@ function star(_x, _y, _radius, _drawtag)
 	})
 end
 
+-- dead bodies of the player from previous attempts
+function carcass(_x, _y)
+	add(world, {
+		id = {
+			class = "carcass"
+		},
+		pos = {
+			x = _x,
+			y = _y
+		},
+		vel = {
+			x = 0,
+			y = c.carcass_move_vy
+		},
+		-- shadow = true,
+		drawtag = "background",
+		draw = function(self, _offset)
+			_offset = (_offset) and _offset or 0
+			spr(40, self.pos.x-3+_offset, self.pos.y-4+_offset, 2, 2)
+		end,
+	})
+end
+
 function timer(_lifetimeinsec, _f) 
     add(world, {
         timer = {
@@ -2173,17 +2241,17 @@ cc65556cc0000000aaaaa000aa7aa0000aaa00000056666665555888888555566666650000000000
 0000000000000000aaaaa000aaaaa000000000005555566666655550055556666665555500000000000000000000000000000000000000000000000000000000
 0000000000000000aaaaa000aaaaa000000000000000000000005500005500000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000aaa0000aa0aa000000000000000000000000500005000000000000000000000000000000000000000000000000000000000000000000000
-00050005500050006000000000600000600000000000000660000000000000060000000000000000000000080000000000000000800000000000000000000000
-00555065560555006600000006600000660000000000006666000000000000660000000000000000000000888000000000000008080000000000000000000000
-00055566665550006660050066600000666000000000066666600000000006660000000000000000000008808800000000000080008000000000000000000000
-00005556655500000666555666000000666600000000666666660005500066660000000000000000000088000880000000000800000800000000000000000000
-00000556655000000066656660000000666660055006666666666055550666660000000000000000000880000088000000008000000080000000000000000000
-00000656656000000006656600000000066666655666666066666555555666660000000000000000008800000008800000080000000008000000000000000000
-00000066660000000008656800000000086666555566668066666558855666660000000000000000088000000000880000800000000000800000000000000000
-00000086680000000088858880000000088666555566688066666558855666660000000000000000880000000000088008000000000000080000000000000000
-00000886688000000888555888000000088866555566888006666558855666600000000000000000088000000000880080000000000000800000000000000000
-00000886688000000880000088000000008886555568880000666558855666000000000000000000008800000008800008000000000008000000000000000000
-00000086680000000800000008000000000888555588800060066588885660060000000000000000000880000088000000800000000080000000000000000000
+0005000550005000600000000060000060000000000000066000000000000006ccc0000000000000000000080000000000000000800000000000000000000000
+00555065560555006600000006600000660000000000006666000000000000660c00000000000000000000888000000000000008080000000000000000000000
+00055566665550006660050066600000666000000000066666600000000006660cccc00000000000000008808800000000000080008000000000000000000000
+000055566555000006665556660000006666000000006666666600055000666600c66c66cc000000000088000880000000000800000800000000000000000000
+0000055665500000006665666000000066666005500666666666605555066666000c666666c00000000880000088000000008000000080000000000000000000
+0000065665600000000665660000000006666665566666606666655555566666000c665566c00000008800000008800000080000000008000000000000000000
+00000066660000000008656800000000086666555566668066666558855666660c0006555c000000088000000000880000800000000000800000000000000000
+00000086680000000088858880000000088666555566688066666558855666660506005555000000880000000000088008000000000000080000000000000000
+00000886688000000888555888000000088866555566888006666558855666600000066555000000088000000000880080000000000000800000000000000000
+00000886688000000880000088000000008886555568880000666558855666000000c66650000000008800000008800008000000000008000000000000000000
+00000086680000000800000008000000000888555588800060066588885660060000cc6c00000000000880000088000000800000000080000000000000000000
 00000066660000000000000000000000000088855888000066056585585650660000000000000000000088000880000000080000000800000000000000000000
 00000556655000000000000000000000000008888880000006655585585556600000000000000000000008808800000000008000008000000000000000000000
 00066665566660000000000000000000000000888800000000665555555566000000000000000000000000888000000000000800080000000000000000000000
