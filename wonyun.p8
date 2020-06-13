@@ -9,7 +9,7 @@ __lua__
 c = {
 	draw_hitbox_debug = false,
 
-	destination_distance = 9000, -- in ticks, 9000 ticks = 5 mins
+	destination_distance = 2000, -- in ticks, 9000 ticks = 5 mins
 
 	shadow_offset = 2,
 	bounds_offset = 32,
@@ -27,9 +27,9 @@ c = {
 	player_speed_fast = 5,
 	player_speed_slow = 1,
 
-	player_starting_hp = 4,
+	player_hp_start = 4,
 
-	player_ammo_start = 8,
+	player_ammo_start = 4,
 	player_ammo_max = 8,
 
 	harvest_distance_small = 12,
@@ -90,6 +90,8 @@ c = {
 
 	fragment_move_vel_min  = 1,
 	fragment_move_vel_range = 1.5,
+	fragment_amt_min = 5,
+	fragment_amt_range = 5,
 	-- explosion_offset_range = 0,
 }
 
@@ -601,13 +603,19 @@ gameplaystate = {
 		g.travelled_distance = 0
 		player(64, 96)
 
+		timer(2, function()
+			dulce(64, -32)
+		
+		end)
+
 		-- carcass(64,24)
 
-		for i=1, 20 do
-			-- angle = rnd()
-			fragment(64, 64, 0.25)
-			-- fragment(64, 64, 1, 1)
-		end
+		-- spawn_fragments(64, 64)
+		-- for i=1, 20 do
+		-- 	-- angle = rnd()
+		-- 	fragment(64, 64, rnd())
+		-- 	-- fragment(64, 64, 1, 1)
+		-- end
 
 		-- -- hammerhead(64, 32)
 		-- -- hammerhead(32, 32)
@@ -704,9 +712,10 @@ gameplaystate = {
 		line(0, 128, 0, 128 - progress, 14)
 
 		-- debug
-		print(#world)
-		print(spawn.last_spawn)
-		print(g.travelled_distance)
+		-- print(#world)
+		print(spawn.last.difficulty)
+		print(spawn.last.unit)
+		-- print(g.travelled_distance)
 		-- print(self.layer11_y)
 		-- print(self.layer12_y)
 	end
@@ -866,6 +875,8 @@ updatesystems = {
 					if coll(e1, e2) then
 						e1.hp -=1
 						rectspark(gecx(e1), gecy(e1), 6, 6, 11)
+
+						spawn_fragments(gecx(e2), gecy(e2))
 						del(world, e2)
 						-- sfx hit
 					end
@@ -903,7 +914,9 @@ updatesystems = {
 
 				for e2 in all(enemies) do
 					if coll(e1, e2) then
+						spawn_fragments(gecx(e1), gecy(e1))
 						del(world, e1)
+
 						e2.hp -= 1
 						e2.hitframe = true
 					end
@@ -915,7 +928,9 @@ updatesystems = {
 
 				for e2 in all(asteroids) do
 					if coll(e1, e2) then
+						spawn_fragments(gecx(e1), gecy(e1))
 						del(world, e1)
+
 						e2.hp -= 1
 						e2.hitframe = true
 					end
@@ -930,12 +945,12 @@ updatesystems = {
 				if (e.id.class == "enemy") then
 
 					if (e.id.size == "small") then
-						spawnexplosion("small", gecx(e), gecy(e))
+						spawn_explosion("small", gecx(e), gecy(e))
 						screenshake(5, 0.3)
 						-- sfx(1)
 
 					elseif (e.id.size == "medium") then
-						spawnexplosion("medium", gecx(e), gecy(e))
+						spawn_explosion("medium", gecx(e), gecy(e))
 						screenshake(7, 0.5)
 						-- sfx(2)
 
@@ -943,7 +958,7 @@ updatesystems = {
 							spawn_from_asteroid("medium", gecx(e), gecy(e))
 						end
 					elseif (e.id.size == "large") then
-						spawnexplosion("large", gecx(e), gecy(e))
+						spawn_explosion("large", gecx(e), gecy(e))
 						screenshake(8, 0.5)
 						-- sfx(2)
 
@@ -953,7 +968,7 @@ updatesystems = {
 					end
 					
 				elseif (e.id.class == "player") then
-					spawnexplosion("large", gecx(e), gecy(e))
+					spawn_explosion("large", gecx(e), gecy(e))
 					screenshake(8, 0.5)
 					-- sfx(2)
 					add(g.carcasses, {x=e.pos.x, y=g.travelled_distance-e.pos.y})
@@ -971,6 +986,10 @@ updatesystems = {
 			e.pos.x = max(e.pos.x, 12)
 			e.pos.y = min(e.pos.y, 115)
 			e.pos.y = max(e.pos.y, 12)
+			-- e.pos.x = (e.pos.x > 115) and 115 or e.pos.x
+			-- e.pos.x = (e.pos.x < 12) and 12 or e.pos.x
+			-- e.pos.y = (e.pos.y > 115) and 115 or e.pos.y
+			-- e.pos.y = (e.pos.y < 12) and 12 or e.pos.y
 		end
 	),
 	outofboundsdestroysys = system({"outofboundsdestroy"},
@@ -1001,11 +1020,11 @@ updatesystems = {
 	),
 	fragmentupdatesystem = system({"fragment"},
 		function(e)
-			-- e.fragment.radius *= e.fragment.radius_rate
-			-- e.vel.x *= e.fragment.vel_rate
-			-- e.vel.y *= e.fragment.vel_rate
-			-- if e.fragment.radius <= 0.1 then del(world, e) end
-			-- if (e.vel.x < 0.01 and e.vel.y < 0.01) then del(world, e) end
+			e.fragment.radius *= e.fragment.radius_rate
+			e.vel.x *= e.fragment.vel_rate
+			e.vel.y *= e.fragment.vel_rate
+			if e.fragment.radius <= 0.1 then del(world, e) end
+			if (abs(e.vel.x) < 0.01 and abs(e.vel.y) < 0.01) then del(world, e) end
 		end
 	),
 	smokeupdatesystem = system({"smoke"},
@@ -1411,13 +1430,16 @@ drawsys = {
 spawn = {
 	cooldown_enemy,
 	cooldown_asteroid,
-	last_spawn
+	last = {
+		difficulty,
+		unit
+	}
 }
 
 function spawner_init()
 	spawn.cooldown_enemy = 90 +rnd(60)
 	spawn.cooldown_asteroid = 60 + rnd(60)
-	spawn.last_spawn = ""
+	spawn.last = {difficulty, unit}
 end
 
 function spawner_update()
@@ -1457,14 +1479,24 @@ end
 function spawn_enemy()
 	-- local _difficulty = rnd_one_among({"low", "medium", "high"})
 	
-	local _difficulty, die
-	die = rnd()
+	local _difficulty, _die
+	_die = rnd()
 	-- if (die >= 0.5 and die < 0.75) then _difficulty = "medium"
 	-- elseif (die >= 0.75) then _difficulty = "high"
 	-- else _difficulty = "low" end
-	_difficulty = (die<0.5) and "low" or _difficulty
-	_difficulty = (0.5<=die and die<=0.75) and "medium" or _difficulty
-	_difficulty = (0.75<die) and "high" or _difficulty
+	-- _difficulty = (die<0.5) and "low" or _difficulty
+	-- _difficulty = (0.5<=die and die<=0.75) and "medium" or _difficulty
+	-- _difficulty = (0.75<die) and "high" or _difficulty
+
+	if (_die<0.5) then _difficulty = "low" end
+	if (0.5<=_die and _die<=0.75) then _difficulty = "medium" end
+	if (0.75<_die) then _difficulty = "high" end
+
+	if spawn.last.difficulty == "high" then
+		_difficulty = rnd_one_among({"low", "medium"})
+	end
+
+	spawn.last.difficulty = _difficulty
 
 	if (_difficulty == "low") then
 
@@ -1473,7 +1505,7 @@ function spawn_enemy()
 		-- one riley
 		if (die == "riley") then
 			riley(rndxspawn(), rndyspawn())
-			spawn.last_spawn = "riley-easy"
+			spawn.last.unit = "riley"
 
 		-- -- one dulce
 		-- elseif (die == "dulce") then
@@ -1482,13 +1514,12 @@ function spawn_enemy()
 		-- one hammerhead
 		elseif (die == "hammerhead") then
 			hammerhead(rndxspawn(), rndyspawn())
-			spawn.last_spawn = "hammerhead-easy"
+			spawn.last.unit = "hammerhead"
 
 		-- one augustus
 		elseif (die == "augustus") then
 			augustus(rndxspawn(), rndyspawn())
-			spawn.last_spawn = "augustus-easy"
-
+			spawn.last.unit = "augustus"
 		end
 
 	elseif (_difficulty == "medium") then
@@ -1496,11 +1527,11 @@ function spawn_enemy()
 		local die = rnd_one_among({"riley", "dulce", "hammerhead", "koltar"})
 
 		-- extra condition for koltar
-		if (formation == "koltar" and
+		if ((formation == "koltar") and
 			-- only spawns from 25% of the progress
 			-- not spawning twice in a row
 			(g.travelled_distance/c.destination_distance < 0.25
-			or spawn.last_spawn == "koltar")) then
+			or spawn.last.unit == "koltar")) then
 
 			die = rnd_one_among({"riley", "dulce", "hammerhead"})
 		end
@@ -1512,12 +1543,12 @@ function spawn_enemy()
 
 			riley(127 * 1/3 - 5, _y)
 			riley(127 * 2/3 - 5, _y)
-			spawn.last_spawn = "riley-medium"
+			spawn.last.unit = "riley"
 
 		-- one dulce, no formation
 		elseif (die == "dulce") then
 			dulce(rndxspawn(), rndyspawn())
-			spawn.last_spawn = "dulce-medium"
+			spawn.last.unit = "dulce"
 			-- sfx for dulce
 
 		-- two hammerheads
@@ -1525,7 +1556,7 @@ function spawn_enemy()
 
 			hammerhead(127 * 1/3 - 5, rndyspawn())
 			hammerhead(127 * 2/3 - 5, rndyspawn())
-			spawn.last_spawn = "hammerhead-medium"
+			spawn.last.unit = "hammerhead"
 
 		-- -- two augustus, aligned
 		-- elseif (die == "augustus") then
@@ -1539,7 +1570,7 @@ function spawn_enemy()
 		elseif (die == "koltar") then
 
 			koltar(127/2 -16, -24)
-			spawn.last_spawn = "koltar"
+			spawn.last.unit = "koltar"
 			-- sfx for koltar?
 
 		end
@@ -1558,14 +1589,14 @@ function spawn_enemy()
 		-- 	formation = "koltar"
 		-- end
 
-		_formation = (die<0.45) and "riley" or _formation
-		_formation = (0.45<=die and die<=0.9) and "augustus" or _formation
-		_formation = (0.9<die) and "augustus" or _formation
+		_formation = (_die<0.45) and "riley" or _formation
+		_formation = (0.45<=_die and _die<=0.9) and "augustus" or _formation
+		_formation = (0.9<_die) and "augustus" or _formation
 
 		-- extra condition for koltar
 		if (_formation == "koltar" and
 			(g.travelled_distance/c.destination_distance < 0.5
-			or spawn.last_spawn == "koltar")) then
+			or spawn.last.unit == "koltar")) then
 			_formation = rnd_one_among({"riley", "augustus"})
 		end
 
@@ -1577,7 +1608,7 @@ function spawn_enemy()
 			riley(127 * 1/4 - 5, _y+8)
 			riley(127 * 2/4 - 5, _y)
 			riley(127 * 3/4 - 5, _y+8)
-			spawn.last_spawn = "riley-hard"
+			spawn.last.unit = "riley"
 
 		-- two augustus
 		elseif (_formation == "augustus") then
@@ -1586,7 +1617,7 @@ function spawn_enemy()
 
 			augustus(127 * 1/3 - 8, _y)
 			augustus(127 * 2/3 - 8, _y)
-			spawn.last_spawn = "augustus-hard"
+			spawn.last.unit = "augustus"
 			-- augustus(127 * 3/4 - 8, _y)
 
 		-- two koltar
@@ -1594,7 +1625,7 @@ function spawn_enemy()
 
 			koltar(127 * 1/3 - 16, -24)
 			koltar(127 * 2/3 - 16, -24)
-			spawn.last_spawn = "koltar"
+			spawn.last.unit = "koltar"
 
 		end
 
@@ -1618,6 +1649,16 @@ function spawn_asteroid()
 
 	-- rnd_one_among({"small", "medium", "large"})
 	asteroid(_type, rnd(128), rndyspawn(), 0.2-rnd(0.4), rnd(2))
+end
+
+function spawn_from_asteroid(_type, _x, _y)
+	local die = ceil(rnd(3))
+	local chance_for_medium = (_type=="large") and 0.3 or 0
+
+	for i=1,die do
+		local _type = rnd()<chance_for_medium and "medium" or "small"
+		asteroid(_type, _x, _y, rnd(3)-1.5, rnd(3)-1.5)
+	end
 end
 
 -- function spawn_cooldown_reset()
@@ -1669,7 +1710,7 @@ function screenshake_update()
 	end
 end
 
-function spawnexplosion(_size, _x, _y)
+function spawn_explosion(_size, _x, _y)
 	-- consists of spark and smoke
 
 	if _size == "small" then
@@ -1691,18 +1732,6 @@ function spawnexplosion(_size, _x, _y)
 			c.explosion_large_amt + rnd(c.explosion_large_amt_range),
 			_x, _y
 		)
-	end
-
-	
-end
-
-function spawn_from_asteroid(_type, _x, _y)
-	local die = ceil(rnd(3))
-	local chance_for_medium = (_type=="large") and 0.3 or 0
-
-	for i=1,die do
-		local _type = rnd()<chance_for_medium and "medium" or "small"
-		asteroid(_type, _x, _y, rnd(3)-1.5, rnd(3)-1.5)
 	end
 end
 
@@ -1740,6 +1769,13 @@ function puffsofsmoke(_maxamt, _x, _y)
 	end
 
 end
+
+function spawn_fragments(_x, _y)
+	_amt = c.fragment_amt_min + ceil(rnd(c.fragment_amt_range))
+	for i=1, _amt do 
+		fragment(_x, _y, rnd())
+	end
+end
  
 -->8
 -- entity constructors
@@ -1763,7 +1799,7 @@ function player(_x, _y)
             w = 2,
             h = 6
 		},
-		hp = c.player_starting_hp,
+		hp = c.player_hp_start,
 		playerweapon = {
 			ammo = c.player_ammo_start,
 			cooldown = 0
@@ -1870,39 +1906,44 @@ function riley(_x, _y)
 end
 
 function dulce(_x, _y)
-
-    add(world, {
-        id = {
-            class = "enemy",
-			subclass = "dulce",
-			size = "medium"
-        },
-        pos = {
-            x=_x,
-            y=_y
-        },
-        vel = {
-            x=0,
-            y=c.dulce_move_vy
-        },
-        box = {
-            w = 15,
-            h = 13
-		},
-		hitframe = false,
-		hp = 1,
-		eweapon = {
-			type = "dulce",
-			cooldown = 0
-		},
-		outofboundsdestroy = true,
-		shadow = true,
-		drawtag = "actor",
-		draw = function(self, _offset)
-			_offset = (_offset) and _offset or 0
-			spr(36, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
-		end
-    })
+	-- show warning indicator
+	indicator(_x)
+	-- delay spawning by one second
+	timer(1, function()
+		add(world, {
+			id = {
+				class = "enemy",
+				subclass = "dulce",
+				size = "medium"
+			},
+			pos = {
+				x=_x,
+				y=_y
+			},
+			vel = {
+				x=0,
+				y=c.dulce_move_vy
+			},
+			box = {
+				w = 15,
+				h = 13
+			},
+			hitframe = false,
+			hp = 1,
+			eweapon = {
+				type = "dulce",
+				cooldown = 0
+			},
+			outofboundsdestroy = true,
+			shadow = true,
+			drawtag = "actor",
+			draw = function(self, _offset)
+				_offset = (_offset) and _offset or 0
+				spr(36, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
+			end
+		})
+	end)
+    
 end
 
 function augustus(_x, _y)
@@ -2094,6 +2135,8 @@ end
 -- hostile/enemy bullet
 function ebullet(_x, _y, _vx, _vy)
 
+	-- spawn_fragments(_x, _y)
+
 	add(world, {
 		id = {
 			class = "bullet",
@@ -2117,6 +2160,9 @@ function ebullet(_x, _y, _vx, _vy)
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(20, self.pos.x-1+_offset, self.pos.y-1+_offset, 1, 1)
+			-- circ(self.pos.x, self.pos.y, 0, 8)
+			-- circ(gecx(self), gecy(self), 0, 8)
+			-- spawn_fragments(gecx(self), gecy(self))
 		end
 	})
 end
@@ -2229,7 +2275,7 @@ function fragment(_x, _y, _angle)
 			y = _vy
 		},
 		fragment = {
-			radius = 1+rnd(2),
+			radius = 1+rnd(1),
 			radius_rate = 0.8 + rnd(2)/10,
 			vel_rate = 0.8 + rnd(2)/10
 		},
@@ -2237,6 +2283,32 @@ function fragment(_x, _y, _angle)
 		draw = function(self)
 			-- ngon(self.pos.x, self.pos.y, self.fragment.radius, 4, 10)
 			circfill(self.pos.x, self.pos.y, self.fragment.radius, 10)
+		end
+	})
+end
+
+-- warning for dulce
+function indicator(_x)
+
+	-- TODO sfx warning
+	add(world,{
+		id = {
+			class = "particle",
+			subclass = "indicator"
+        },
+		pos = {
+			x = _x,
+			y = 0
+		},
+		particle = {
+			lifetime = 0,
+			lifetime_max = 30
+		},
+		drawtag = "particle",
+		draw = function(self)
+			pal(13, 14)
+			spr(135, self.pos.x, self.pos.y, 1, 1)
+			pal()
 		end
 	})
 end
