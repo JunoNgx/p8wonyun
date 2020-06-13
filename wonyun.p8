@@ -9,7 +9,7 @@ __lua__
 c = {
 	draw_hitbox_debug = false,
 
-	destination_distance = 2000, -- in ticks, 9000 ticks = 5 mins
+	destination_distance = 250, -- in ticks, 9000 ticks = 5 mins
 
 	shadow_offset = 2,
 	bounds_offset = 32,
@@ -459,7 +459,7 @@ menustate = {
 			else
 				print("all is lost", 64-#"press ❎ to send"*2, 96, 12)
 				print("erase your savedata", 64-#"erase your savedata"*2, 104, 8)
-				print("to try again", 64-#"to try again"*2, 112, 12)
+				print("to play again", 64-#"to play again"*2, 112, 12)
 			end
 			
 		elseif (self.page == "credits") then
@@ -637,11 +637,17 @@ gameplaystate = {
 
 		g.travelled_distance += 1;
 
-		if (g.travelled_distance >= c.destination_distance and not self.won) then
+		if (g.travelled_distance >= c.destination_distance and getplayer() and not self.won) then
 			exitgameplay("win")
-			-- TODO removes keepsinbounds, playercontrol, collision
-			-- TODO mark game is won
+
+			p = getplayer()
+			p.playercontrol = false
+			p.keepinscreen = false
+			p.vel.x=0
+			p.vel.y-=7
+
 			self.won = true
+			-- TODO sfx won
 		end
 
 		spawner_update()
