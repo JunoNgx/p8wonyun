@@ -9,7 +9,7 @@ __lua__
 c = {
 	draw_hitbox_debug = false,
 
-	destination_distance = 250, -- in ticks, 9000 ticks = 5 mins
+	destination_distance = 9000, -- in ticks, 9000 ticks = 5 mins
 
 	shadow_offset = 2,
 	bounds_offset = 32,
@@ -27,7 +27,7 @@ c = {
 	player_speed_fast = 5,
 	player_speed_slow = 1,
 
-	player_starting_hp = 1,
+	player_starting_hp = 4,
 
 	player_ammo_start = 8,
 	player_ammo_max = 8,
@@ -68,23 +68,28 @@ c = {
 
 	asteroid_large_vel_max = 1.5,
 
-	explosion_increment_rate = 2,	
 	explosion_small_amt = 4,
 	explosion_small_amt_range = 3,
 	explosion_medium_amt = 6,
 	explosion_medium_amt_range = 4,
 	explosion_large_amt = 8,
 	explosion_large_amt_range = 5,
-
+	
 	star_radius_min = 1,
 	star_radius_range = 3,
-
+	
 	smoke_radius_init = 10,
 	smoke_radius_range = 5,
 	smoke_decrement_rate = 0.5,
-
+	
 	carcass_move_vy = 2,
+	
+	spark_increment_rate = 2,	
+	spark_color_1 = 8,
+	spark_color_2 = 10,
 
+	fragment_move_vel_min  = 1,
+	fragment_move_vel_range = 1.5,
 	-- explosion_offset_range = 0,
 }
 
@@ -596,7 +601,13 @@ gameplaystate = {
 		g.travelled_distance = 0
 		player(64, 96)
 
-		carcass(64,24)
+		-- carcass(64,24)
+
+		for i=1, 20 do
+			-- angle = rnd()
+			fragment(64, 64, 0.25)
+			-- fragment(64, 64, 1, 1)
+		end
 
 		-- -- hammerhead(64, 32)
 		-- -- hammerhead(32, 32)
@@ -854,6 +865,7 @@ updatesystems = {
 				for e2 in all(ebullets) do
 					if coll(e1, e2) then
 						e1.hp -=1
+						rectspark(gecx(e1), gecy(e1), 6, 6, 11)
 						del(world, e2)
 						-- sfx hit
 					end
@@ -982,9 +994,18 @@ updatesystems = {
 			end
 		end
 	),
-	explosionupdatesystem = system({"explosion"},
+	sparkupdatesystem = system({"spark"},
 		function(e)
-			e.explosion.radius += c.explosion_increment_rate
+			e.spark.radius += c.spark_increment_rate
+		end
+	),
+	fragmentupdatesystem = system({"fragment"},
+		function(e)
+			-- e.fragment.radius *= e.fragment.radius_rate
+			-- e.vel.x *= e.fragment.vel_rate
+			-- e.vel.y *= e.fragment.vel_rate
+			-- if e.fragment.radius <= 0.1 then del(world, e) end
+			-- if (e.vel.x < 0.01 and e.vel.y < 0.01) then del(world, e) end
 		end
 	),
 	smokeupdatesystem = system({"smoke"},
@@ -1438,9 +1459,12 @@ function spawn_enemy()
 	
 	local _difficulty, die
 	die = rnd()
-	if (die >= 0.5 and die < 0.75) then _difficulty = "medium"
-	elseif (die >= 0.75) then _difficulty = "high"
-	else _difficulty = "low" end
+	-- if (die >= 0.5 and die < 0.75) then _difficulty = "medium"
+	-- elseif (die >= 0.75) then _difficulty = "high"
+	-- else _difficulty = "low" end
+	_difficulty = (die<0.5) and "low" or _difficulty
+	_difficulty = (0.5<=die and die<=0.75) and "medium" or _difficulty
+	_difficulty = (0.75<die) and "high" or _difficulty
 
 	if (_difficulty == "low") then
 
@@ -1523,27 +1547,31 @@ function spawn_enemy()
 	elseif (_difficulty == "high") then
 
 		-- local die = rnd_one_among({1, 2, 3})
-		local die, formation
+		local _die, _formation
 
-		die = rnd()
-		if (die >= 0.45) then
-			formation = "riley"
-		elseif (die >= 0.9) then
-			formation = "augustus"
-		else
-			formation = "koltar"
-		end
+		_die = rnd()
+		-- if (die >= 0.45) then
+		-- 	formation = "riley"
+		-- elseif (die >= 0.9) then
+		-- 	formation = "augustus"
+		-- else
+		-- 	formation = "koltar"
+		-- end
+
+		_formation = (die<0.45) and "riley" or _formation
+		_formation = (0.45<=die and die<=0.9) and "augustus" or _formation
+		_formation = (0.9<die) and "augustus" or _formation
 
 		-- extra condition for koltar
-		if (formation == "koltar" and
+		if (_formation == "koltar" and
 			(g.travelled_distance/c.destination_distance < 0.5
 			or spawn.last_spawn == "koltar")) then
-			formation = rnd_one_among({"riley", "augustus"})
+			_formation = rnd_one_among({"riley", "augustus"})
 		end
 
 
 		-- three rileys
-		if (formation == "riley") then
+		if (_formation == "riley") then
 			local _y = rndyspawn()
 
 			riley(127 * 1/4 - 5, _y+8)
@@ -1552,7 +1580,7 @@ function spawn_enemy()
 			spawn.last_spawn = "riley-hard"
 
 		-- two augustus
-		elseif (formation == "augustus") then
+		elseif (_formation == "augustus") then
 
 			local _y = rndyspawn()
 
@@ -1562,7 +1590,7 @@ function spawn_enemy()
 			-- augustus(127 * 3/4 - 8, _y)
 
 		-- two koltar
-		elseif (formation == "koltar") then
+		elseif (_formation == "koltar") then
 
 			koltar(127 * 1/3 - 16, -24)
 			koltar(127 * 2/3 - 16, -24)
@@ -1574,19 +1602,22 @@ function spawn_enemy()
 end
 
 function spawn_asteroid()
-	local _type, die
-	die = rnd()
+	local _type, _die
+	_die = rnd()
 	
-	if (die >= 0.75) then
-		_type = "small"
-	elseif (die >= 0.5) then
-		_type = "medium"
-	else
-		_type = "large"
-	end
+	-- if (die >= 0.75) then
+	-- 	_type = "small"
+	-- elseif (die >= 0.5) then
+	-- 	_type = "medium"
+	-- else
+	-- 	_type = "large"
+	-- end
+	_type = (_die<0.5) and "large" or _type
+	_type = (0.5<=_die and _die<=0.75) and "medium" or _type
+	_type = (0.75<_die) and "small" or _type
 
 	-- rnd_one_among({"small", "medium", "large"})
-	asteroid(_type, rnd(128), rndyspawn(), 0, rnd(2))
+	asteroid(_type, rnd(128), rndyspawn(), 0.2-rnd(0.4), rnd(2))
 end
 
 -- function spawn_cooldown_reset()
@@ -1639,22 +1670,23 @@ function screenshake_update()
 end
 
 function spawnexplosion(_size, _x, _y)
+	-- consists of spark and smoke
 
 	if _size == "small" then
-		explosion(_x, _y, 6)
+		rectspark(_x, _y, 6, 8, 8, c.spark_color_1)
 		puffsofsmoke(
 			c.explosion_small_amt + rnd(c.explosion_small_amt_range),
 			_x, _y
 		)
 
 	elseif _size == "medium" then
-		explosion(_x, _y, 10)
+		rectspark(_x, _y, 10, 10, c.spark_color_1)
 		puffsofsmoke(
 			c.explosion_medium_amt + rnd(c.explosion_medium_amt_range),
 			_x, _y
 		)
 	elseif _size == "large" then
-		explosion(_x, _y, 15)
+		rectspark(_x, _y, 15, 12, c.spark_color_1)
 		puffsofsmoke(
 			c.explosion_large_amt + rnd(c.explosion_large_amt_range),
 			_x, _y
@@ -2089,11 +2121,12 @@ function ebullet(_x, _y, _vx, _vy)
 	})
 end
 
-function explosion(_x, _y, _initradius)
+function rectspark(_x, _y, _initradius, _lifetime_max, _color)
 	
 	add(world,{
 		id = {
-			class = "explosion"
+			class = "particle",
+			subclass = "explosion"
         },
         pos = {
             x=_x,
@@ -2101,35 +2134,44 @@ function explosion(_x, _y, _initradius)
 		},
 		particle = {
 			lifetime = 0,
-			lifetime_max = 10
+			lifetime_max = _lifetime_max,
 		},
-		ani = {
-			frame = 1, -- when working with table indexes, do not ever let it go zero
-			framerate = 1,
-			framecount = 16,
-			loop = false
-		},
-		explosion = {
-			radius = _initradius
+		-- ani = {
+		-- 	frame = 1, -- when working with table indexes, do not ever let it go zero
+		-- 	framerate = 1,
+		-- 	framecount = 16,
+		-- 	loop = false
+		-- },
+		spark = {
+			radius = _initradius,
+			color = _color
 		},
 		drawtag = "particle",
 		draw = function(self)
 
-			local frame = flr(self.ani.frame)
-			local halo_offset = -1
+			-- local frame = flr(self.ani.frame)
+			-- local halo_offset = -1
 
-			pal(8, f820t[frame])
+			-- -- pal(8, f820t[frame])
 
+			-- rect(
+			-- 	self.pos.x - self.explosion.radius + halo_offset,
+			-- 	self.pos.y - self.explosion.radius + halo_offset,
+			-- 	self.pos.x + self.explosion.radius + halo_offset,
+			-- 	self.pos.y + self.explosion.radius + halo_offset,
+			-- 	8
+			-- )
+			
 			rect(
-				self.pos.x - self.explosion.radius + halo_offset,
-				self.pos.y - self.explosion.radius + halo_offset,
-				self.pos.x + self.explosion.radius + halo_offset,
-				self.pos.y + self.explosion.radius + halo_offset,
-				8
+				self.pos.x - self.spark.radius,
+				self.pos.y - self.spark.radius,
+				self.pos.x + self.spark.radius,
+				self.pos.y + self.spark.radius,
+				self.spark.color
 			)
 			
 			-- spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
-			pal()
+			-- pal()
 
 			-- debug
 			-- print(f720t[frame], self.pos.x, self.pos.y, explosion_animation_table[1][1])
@@ -2142,7 +2184,8 @@ end
 function smoke (_x, _y, _vx, _vy)
 	add(world,{
 		id = {
-			class = "smoke"
+			class = "particle",
+			subclass = "smoke"
         },
         pos = {
             x = _x,
@@ -2166,6 +2209,39 @@ function smoke (_x, _y, _vx, _vy)
 	})
 end
 
+-- impact pieces
+function fragment(_x, _y, _angle)
+
+	local vel = c.fragment_move_vel_min + rnd(c.fragment_move_vel_range)
+	local _vx, _vy = vel * cos(_angle), vel * sin(_angle)
+
+	add(world,{
+		id = {
+			class = "particle",
+			subclass = "fragment"
+        },
+        pos = {
+            x = _x,
+            y = _y
+		},
+		vel = {
+			x = _vx,
+			y = _vy
+		},
+		fragment = {
+			radius = 1+rnd(2),
+			radius_rate = 0.8 + rnd(2)/10,
+			vel_rate = 0.8 + rnd(2)/10
+		},
+		drawtag = "particle",
+		draw = function(self)
+			-- ngon(self.pos.x, self.pos.y, self.fragment.radius, 4, 10)
+			circfill(self.pos.x, self.pos.y, self.fragment.radius, 10)
+		end
+	})
+end
+
+-- most likely unused
 function star(_x, _y, _radius, _drawtag) 
 
 	add(world, {
