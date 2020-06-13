@@ -39,7 +39,7 @@ c = {
 
 	fbullet_speed = -12,
 
-	spawnrate_enemy_min = 60,
+	spawnrate_enemy_min = 45,
 	spawnrate_enemy_range = 45,
 	spawnrate_asteroid_min = 45,
 	spawnrate_asteroid_max = 45,
@@ -689,6 +689,7 @@ gameplaystate = {
 		-- debug
 		print(#world)
 		print(spawn.last_spawn)
+		print(g.travelled_distance)
 		-- print(self.layer11_y)
 		-- print(self.layer12_y)
 	end
@@ -937,6 +938,7 @@ updatesystems = {
 					spawnexplosion("large", gecx(e), gecy(e))
 					screenshake(8, 0.5)
 					-- sfx(2)
+					add(g.carcasses, {x=e.pos.x, y=g.travelled_distance-e.pos.y})
 					exitgameplay("lose")
 				end
 
