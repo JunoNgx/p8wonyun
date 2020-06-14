@@ -38,10 +38,10 @@ c = {
 	harvest_distance_large = 20,
 	harvest_complete = 60, -- 2 seconds
 
-	fbullet_speed = -12,
+	fbullet_speed = -8,
 
-	spawnrate_enemy_min = 45,
-	spawnrate_enemy_range = 45,
+	spawnrate_enemy_min = 60,
+	spawnrate_enemy_range = 30,
 	spawnrate_asteroid_min = 45,
 	spawnrate_asteroid_max = 45,
 
@@ -49,7 +49,7 @@ c = {
 	riley_firerate = 45,
 	riley_bullet_vel = 1.5,
 
-	dulce_move_vy = 5,
+	dulce_move_vy = 6,
 	dulce_firerate = 7,
 	dulce_bullet_vy = 2,
 
@@ -430,6 +430,7 @@ menustate = {
 				print("all is lost", 64-#"press ❎ to send"*2, 96, 12)
 				print("erase your savedata", 64-#"erase your savedata"*2, 104, 8)
 				print("to play again", 64-#"to play again"*2, 112, 12)
+				print("press p to access pause menu", 64-#"press p to access pause menu"*2, 120, 7)
 			end
 			
 		elseif (self.page == "credits") then
@@ -521,7 +522,7 @@ captionstate = {
 		local message = m[g.ship_no]
 		if (g.ship_no == 100) then
 			message = 
-				"we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
+				"we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall have been lost"
 		end
 
 		print(message, 16, 32, 7)
@@ -643,6 +644,10 @@ gameplaystate = {
 		
 		local progress = 128*(g.travelled_distance/c.destination_distance)
 		line(0, 128, 0, 128 - progress, 14)
+
+		-- for debug
+		-- color()
+		-- print(spawn.cooldown_enemy)
 	end
 }
 
@@ -709,9 +714,8 @@ function _init()
 	loadprogress()
 
 	gamestate = splashstate
-	-- gamestate = gameplaystate
 	-- gamestate = menustate
-	-- gamestate = outrostate
+	-- gamestate = gameplaystate
 	gamestate:init()
 end
 
@@ -1067,7 +1071,7 @@ updatesystems = {
 				-- axis aligned and diagonally
 				elseif (e.eweapon.type == "koltar") then
 
-					if gameplaystate.isrunning then sfx(15) end
+					if gameplaystate.isrunning then sfx(18) end
 					local offset_x, offset_y = 15, 6
 
 					-- going clockwise from top
@@ -1365,8 +1369,8 @@ function spawn_enemy()
 	_die = rnd()
 
 	if (_die<0.5) then _difficulty = "low" end
-	if (0.5<=_die and _die<=0.75) then _difficulty = "medium" end
-	if (0.75<_die) then _difficulty = "high" end
+	if (0.5<=_die and _die<=0.85) then _difficulty = "medium" end
+	if (0.85<_die) then _difficulty = "high" end
 
 	if spawn.last.difficulty == "high" then
 		_difficulty = rnd_one_among({"low", "medium"})
@@ -1443,9 +1447,9 @@ function spawn_enemy()
 		local _die, _formation
 		_die = rnd()
 
-		if (_die<0.3) then _formation = "riley" end
-		if (0.3<=_die and _die<0.6) then _formation = "dulce" end
-		if (0.6<=_die and _die<=0.9) then _formation = "augustus" end
+		if (_die<0.1) then _formation = "riley" end
+		if (0.1<=_die and _die<0.4) then _formation = "dulce" end
+		if (0.4<=_die and _die<=0.9) then _formation = "augustus" end
 		if (0.9<_die) then _formation = "koltar" end
 
 		-- extra conditions for koltar

@@ -25,7 +25,7 @@ The game allows only a limited number of attempts to reach the objective destina
 
 **This can be performed from the pause menu** (default keybinding on Pico-8 is `P`).
 
-## Technicality
+## Technicalities
 
 ### State machine
 
