@@ -101,7 +101,7 @@ c = {
 -- 01 intro audio
 -- 02 menu click
 -- 03 start game
--- 04 gameplay start audio (rumble)
+-- 04 gameplay start audio
 
 -- 05 player fire
 -- 06 player hit
@@ -113,17 +113,17 @@ c = {
 -- 11 ebullet hit
 -- 12 dulce indicator warning
 -- 13 dulce screaming
--- 14 riley shot
+-- 14 riley shot -- unused
 -- 15 hammerhead shot
--- 16 augustus shot
+-- 16 augustus shot -- unused
 -- 17 koltar screaming
 -- 18 koltar shot
 
--- 20 explosion 1
--- 21 explosion 2
+-- 20 explosion 1 -- unused
+-- 21 explosion 2 -- unused
 -- 22 explosion 3
--- 23 explosion 4
--- 24 explosion 5
+-- 23 explosion 4 -- unused
+-- 24 explosion 5 -- unused
 
 -- 25 victory
 -- 26 outro caption audio

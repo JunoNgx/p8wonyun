@@ -1,8 +1,7 @@
 # Wonyun Trench Run
 
 * **Genre**: Shump/Bullet-hell
-* **Platform**: [PICO-8]
-(https://www.lexaloffle.com/pico-8.php)
+* **Platform**: [PICO-8](https://www.lexaloffle.com/pico-8.php)
 * **Language/Framework**: Lua (Pico-8 subset)
 * **Release date**: 16 June 2020
 
@@ -14,7 +13,7 @@ The game takes a more defensive on the genre of bullet hell genre, in which ammu
 
 ## The original project
 
-This is the complete version of [Project Wonyun](https://github.com/JunoNgx/Project-Wonyun), a [LÖVE](https://love2d.org/) project which was close to completion but, but was abandoned at some time in 2014.
+This is the re-interpreted and completed version of [Project Wonyun](https://github.com/JunoNgx/Project-Wonyun), which was in turned heavily inspired by [RGCD.DEV's r0x EP](https://rgcddev.itch.io/r0x-extended-play) and made with [LÖVE](https://love2d.org/). **Project Wonyun** was close to feature-complete, but was abandoned at some point of time in 2014.
 
 The game was meant to be part of a much larger universe spanning across multiple titles, but like most fantasies in life, they were never made.
 
