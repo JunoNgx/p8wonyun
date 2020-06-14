@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 27
 __lua__
 -- wonyun trench run
--- by juno nguyen
+-- a game by juno nguyen
 -- @junongx
 
 -- huge table of constants for game design tuning
@@ -124,7 +124,7 @@ c = {
 -- 21 explosion 2
 -- 22 explosion 3
 -- 23 explosion 4
--- 24 explosion 4
+-- 24 explosion 5
 
 -- 25 victory
 -- 26 outro caption audio
@@ -149,13 +149,15 @@ c = {
 -- }
 
 -- fade table from color 8 to 0 in 16 steps
-f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
-f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
+-- f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
+-- f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
 
 g = {
 	ship_no = 1,
 	travelled_distance = 0,
-	carcasses = {},
+	-- this is where the positions of the
+	-- player's past failed attempts are kept
+	carcasses = {}, 
 }
 
 -- 24 messages for caption state
@@ -293,8 +295,8 @@ fader = {
 	projected_time_taken = 0,
 	projected_velocity = 0,
 	table= {
-		-- position 15 is all blackju
-		-- position 0 is all bright colors
+		-- position 15 is blackj
+		-- position 0 is the original color
 		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 		{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
 		{2,2,2,2,2,2,1,1,1,0,0,0,0,0,0},
@@ -330,11 +332,9 @@ function fade(_begin, _final, _durationinsecs)
 	fader.pos = _begin
 	fader.time = 0
 	fader.status = "working"
-
 end
 
 function fade_update()
-	-- TODO clean up and write something more optimal
 	if (fader.time < fader.projected_time_taken) then
 		fader.time +=1
 		fader.pos += fader.projected_velocity
@@ -342,7 +342,6 @@ function fade_update()
 end
 
 function fade_draw(_position)
-	-- for debug
 	for c=0,15 do
 		if flr(_position+1)>=16 then
 			pal(c,0)
@@ -1091,7 +1090,6 @@ updatesystems = {
 	),
 
 	-- harvesting system
-
 	harvesteesystem = system({"harvestee"},
 		function(e)
 			if (e.harvestee.beingharvested) then
@@ -1317,6 +1315,9 @@ updatesystems = {
 	controlsys = system({"playercontrol"},
 		function(e)
 
+			-- ALTERNATE IMPLEMENTATION
+			-- for documentation and educational purpose
+
 			-- local speed_value = (btn(4)) and c.player_speed_slow or c.player_speed_fast
 			-- local angle, speed
 
@@ -1370,7 +1371,6 @@ updatesystems = {
 			if (btnp(4)) then
 				if (e.playerweapon.cooldown <=0
 					and e.playerweapon.ammo > 0) then
-					-- screenshake(2, 0.1)
 					sfx(5)
 					fbullet(e.pos.x, e.pos.y-5)
 					e.playerweapon.cooldown = c.player_firerate
@@ -1687,7 +1687,6 @@ function spawn_asteroid()
 	_type = (0.5<=_die and _die<=0.75) and "medium" or _type
 	_type = (0.75<_die) and "small" or _type
 
-	local 
 	_x = rnd(128)
 	_y = rndyspawn()
 	_vx = rnd(0.3)
@@ -2174,15 +2173,15 @@ function fbullet(_x, _y)
 		-- },
 		outofboundsdestroy = true,
 		drawtag = "projectile",
-		draw = function(self, _offset)
-			_offset = (_offset) and _offset or 0
+		draw = function(self)
+			-- _offset = (_offset) and _offset or 0
 			-- if (flr(self.ani.frame) == 0) then
 			-- 	spr(18, self.pos.x, self.pos.y, 1, 1) -- muzzleflash doesn't have shadow
 			-- elseif (flr(self.ani.frame) == 1) then
 			-- 	spr(19, self.pos.x+_offset, self.pos.y+_offset, 1, 1)
 			-- end
 			
-			spr(19, self.pos.x+_offset, self.pos.y+_offset, 1, 1)
+			spr(19, self.pos.x, self.pos.y, 1, 1)
 			-- debug
 			-- print(self.ani.frame, self.pos.x, self.pos.y, 7)
 		end
