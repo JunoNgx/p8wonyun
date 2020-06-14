@@ -93,7 +93,6 @@ c = {
 	fragment_move_vel_range = 1.5,
 	fragment_amt_min = 5,
 	fragment_amt_range = 5,
-	-- explosion_offset_range = 0,
 }
 
 -- sfx note
@@ -131,27 +130,7 @@ c = {
 
 -- 27 player's death
 
--- table for sprite position of explosion table
---   	each position of the table will provide
--- 	  	the corresponding sprite number (in the sprite sheet)
---    	and the width/height to display the sprite appropriately
---     	e.g. frame 5 will display sprite 010 with the range of 2
--- 		spr no, offsets, spr width/height range
---		offset is needed as not all sprites are of equal sizes
--- explosion_animation_table = {
--- 	{15,  0, 1},
--- 	{14,  0, 1},
--- 	{13,  0, 1},
--- 	{12,  0, 1},
--- 	{10, -4, 2},
--- 	{42, -4, 2},
--- 	{44, -4, 2},
--- }
-
--- fade table from color 8 to 0 in 16 steps
--- f820t = {8,8,8,8,8,8,8,2,2,2,2,2,2,0,0}
--- f720t = {7,6,6,6,6,13,13,13,5,5,5,1,1,0,0}
-
+-- progress storage
 g = {
 	ship_no = 1,
 	travelled_distance = 0,
@@ -160,8 +139,8 @@ g = {
 	carcasses = {}, 
 }
 
--- 24 messages for caption state
--- corresponding to 24 lives
+-- 12 messages for caption state
+-- corresponding to 12 lives
 m = {
 	"wonyun base is under siege\nthe kaedeni are invading\n\na runner ship must be sent\nfor help\n\nmothership must be alerted\nfor reinforcement", --1
 	"if they want war\nlet's give them war\n\ngo out there\nand kill them all", -- 2
@@ -223,20 +202,6 @@ function getentitiesbysubclass(_subclass, _world)
     return filtered_entities
 end
 
--- function getentitiesbysubclass(_subclass, _world)
---     local filtered_entities = {}
--- 	for e in all(_world) do
--- 		if (e.id and e.id.subclass) then
--- 			-- if (e.id.subclass) then
--- 				if (e.id.subclass == _subclass) then
--- 					add(filtered_entities, e)
--- 				end
--- 			-- end
--- 		end
---     end
---     return filtered_entities
--- end
-
 -- basic AABB collision detection using pos and box components
 function coll(e1, e2)
     if e1.pos.x < e2.pos.x + e2.box.w and
@@ -248,35 +213,6 @@ function coll(e1, e2)
     end
     return false
 end
-
--- function sortedbydrawlayeradd(_system, _e)
--- 	add(_system, _e)
--- 	-- printh(#_system)
--- 	-- if (_e.drawlayer) then printh(_e.id.class) end
--- 	if _e.drawlayer then
--- 		-- printh(_e.id.class.._e.drawlayer)
-		
--- 	-- 	-- local debuglog = ""
--- 	-- 	-- for i=1, #world do
--- 	-- 	-- 	debuglog = debuglog..world[i].id.class
--- 	-- 	-- end
-		
-
--- 		for i=1,#_system do
--- 			if _system[i].drawlayer then
--- 				if _e.drawlayer < _system[i].drawlayer then 
--- 					-- printh(_system[i].drawlayer)
--- 					-- shift all remaining entities by one index
--- 					-- for j=#_system-1, i do
--- 					-- 	_system[j+1] = _system[j]
--- 					-- end
--- 					-- _system[i] = _e
--- 				end
--- 			end
--- 		end
--- 	end
-
--- end
 
 function palall(_color) -- switch all colors to target color
 	for color=1, 15 do 
@@ -295,7 +231,7 @@ fader = {
 	projected_time_taken = 0,
 	projected_velocity = 0,
 	table= {
-		-- position 15 is blackj
+		-- position 15 is black
 		-- position 0 is the original color
 		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 		{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
@@ -451,7 +387,7 @@ menustate = {
 
 	end,
 	draw = function(self)
-		-- rectfill(0,0,127,127,1)
+
 		if (self.page == "main") then
 			
 			print("wonyun trench run", 16, 16, 8)
@@ -471,7 +407,7 @@ menustate = {
 			-- blue dots representing available ships
 			local sn = 13 - g.ship_no -- number of ships left
 
-			-- looping the loopable portion/quotient
+			-- looping through the quotient rows
 			for j=1,flr(sn/6) do
 				for i=1,6 do
 					circfill(8+16*i, 48+10*j, 3, 12)
@@ -481,11 +417,6 @@ menustate = {
 			for i=1,sn % 6 do
 				circfill(8+16*i, 48+10*(flr(sn/6)+1), 3, 12)
 			end
-			-- print("lives left: 47", 16, 32, 7)
-			-- print("weapon level: 2", 16, 64, 7)
-			-- print("armor level: 4", 16, 72, 7)
-			-- print("press x to send another ship", 16, 120, 7)
-			-- spr(1, 12, 12)
 
 			spr(134, 0, 80, 1, 2)
 			print("credits", 10, 86, 6)
@@ -535,9 +466,6 @@ menustate = {
 				104, 7
 			)
 
-			-- spr(135, 127-8, 80, 1, 2)
-			-- print("back", 112, 100, 7)
-
 		elseif (self.page == "manual") then
 			
 			spr(0, 60, 12, 2, 2)
@@ -567,9 +495,6 @@ menustate = {
 
 			print("good luck!", 72, 112, 7)
 			
-
-			-- spr(134, 0, 104, 1, 2)
-			-- print("back", 12, 110, 7)
 		end
 	end
 }
@@ -579,8 +504,6 @@ menustate = {
 captionstate = {
 	name = "caption",
 	init = function()
-		-- load progress
-		-- self.message = m[g.ship_no]
 		if (g.ship_no == 100) then sfx(26) end
 		fadein()
 	end,
@@ -605,23 +528,6 @@ captionstate = {
 	end
 }
 
--- outrostate = {
--- 	init = function()
--- 		fadein()
--- 		g.ship_no = 100
--- 	end,
--- 	update = function()
--- 		if (btnp(4)) then 
--- 			transit(menustate)
--- 		end
--- 	end,
--- 	draw = function()
--- 		color(7)
--- 		local message = "we have reached\n\nbut oh no\n\nthe mothership has fallen\n\n\nwe are too late\n\n\nall has been lost"
--- 		print(message, 16, 32)
--- 	end
--- }
-
 gameplaystate = {
 	name = "gameplay",
 	layer11_y = 0,
@@ -629,11 +535,13 @@ gameplaystate = {
 	layer2_y = 0,
 	layer3_y = 0,
 	won = false,
-	-- -- the sole purpose of the existence of this variable
-	-- -- is to fix a bug in which enemy fire sfx plays
-	-- -- perpetually as the game fades when their fire rate
-	-- -- is cooled down
+
+	-- the sole purpose of the existence of this variable
+	-- is to fix a bug in which enemy fire sfx plays
+	-- perpetually as the game fades when their fire rate
+	-- is cooled down
 	isrunning = true, 
+
 	init = function(self)
 		fadein()
 		self.isrunning = true
@@ -644,29 +552,9 @@ gameplaystate = {
 
 		sfx(4)
 
-		-- timer(2, function()
-		-- 	dulce(64, -32)
-		
-		-- end)
-
-		-- carcass(64,24)
-
-		-- spawn_fragments(64, 64)
-		-- for i=1, 20 do
-		-- 	-- angle = rnd()
-		-- 	fragment(64, 64, rnd())
-		-- 	-- fragment(64, 64, 1, 1)
-		-- end
-
-		-- -- hammerhead(64, 32)
-		-- -- hammerhead(32, 32)
-		-- -- hammerhead(96, 32)
-
-		-- -- augustus(64, 64)
-	
-		-- timer(1, function()
-		-- 	hammerhead(12, 12)
-		-- end)
+		-- unused materials
+		-- codes allowed to remain for educational purpose
+		-- creating stars on the background and foreground
 
 		-- for i=1,20 do
 		-- 	star(
@@ -713,6 +601,9 @@ gameplaystate = {
 
 		spawner_update()
 		screenshake_update()
+
+		-- the bulk of the game logic
+		-- iterating through systems
 		for key,system in pairs(updatesystems) do
 			system(world)
 		end
@@ -752,22 +643,8 @@ gameplaystate = {
 		
 		local progress = 128*(g.travelled_distance/c.destination_distance)
 		line(0, 128, 0, 128 - progress, 14)
-
-		-- debug
-		-- print(#world)
-		-- print(spawn.last.difficulty)
-		-- print(spawn.last.unit)
-		-- print(g.travelled_distance)
-		-- print(self.layer11_y)
-		-- print(self.layer12_y)
 	end
 }
-
--- transitor = {
--- 	timer = 0,
--- 	destination_state,
--- }
-
 
 transitstate = {
 	name = "transit",
@@ -811,14 +688,7 @@ function exitgameplay(_outcome)
 	end
 end
 
--- -- spawning carcasses of previous dead spots
--- function carcass_diary_gameplay_update()
--- 	-- TODO for carcass in all(g.carcasses) do
--- 		-- if g.travel_distance == carcass then
--- 			-- carcass()
--- 		-- end
--- end
-
+-- custom menu item in the pause menu
 menuitem(3, "erase savedata", function()
 	dset("carcasses", nil)
 	dset("ship_no", 1)
@@ -837,6 +707,7 @@ end
 function _init()
 	cartdata("wonyun-junongx")
 	loadprogress()
+
 	gamestate = splashstate
 	-- gamestate = gameplaystate
 	-- gamestate = menustate
@@ -891,20 +762,6 @@ updatesystems = {
 			end
 			
 		end
-		-- function(e)
-		-- 	if (e.ani.loop) then
-		-- 		if (e.ani.frame < e.ani.framecount) then -- so hacky
-		-- 			e.ani.frame += e.ani.framerate
-		-- 		else
-		-- 			e.ani.frame = 0
-		-- 		end
-		-- 	else
-		-- 		if (e.ani.frame < e.ani.framecount-1) then
-		-- 			e.ani.frame += e.ani.framerate
-		-- 		end
-		-- 	end
-			
-		-- end
 	),
 	collisionsys = system({"id", "pos", "box"},
 		function(e1)
@@ -922,7 +779,6 @@ updatesystems = {
 
 						spawn_fragments(gecx(e2), gecy(e2))
 						del(world, e2)
-						-- sfx hit
 					end
 				end
 
@@ -934,23 +790,6 @@ updatesystems = {
 						e1.hp -= 1
 					end
 				end
-
-			-- -- asteroid vs asteroid
-			-- feature cancelled due to mechanical complications
-			-- elseif (e1.id.class == "enemy") then
-			-- 	if (e1.id.subclass == "asteroid") then
-			-- 		asteroids = getentitiesbysubclass("asteroid", world)
-			-- 		del(asteroids, e1)
-
-			-- 		for e2 in all(asteroids) do
-			-- 			if coll(e1, e2) then
-			-- 				-- e1.hp -= 1
-			-- 				e1.hitframe = true
-			-- 				-- e2.hp -= 1
-			-- 				-- e2.hitframe = true
-			-- 			end
-			-- 		end
-			-- 	end
 
 			-- friendly bullet vs enemy
 			elseif (e1.id.subclass == "fbullet") then
@@ -1033,10 +872,6 @@ updatesystems = {
 			e.pos.x = max(e.pos.x, 12)
 			e.pos.y = min(e.pos.y, 115)
 			e.pos.y = max(e.pos.y, 12)
-			-- e.pos.x = (e.pos.x > 115) and 115 or e.pos.x
-			-- e.pos.x = (e.pos.x < 12) and 12 or e.pos.x
-			-- e.pos.y = (e.pos.y > 115) and 115 or e.pos.y
-			-- e.pos.y = (e.pos.y < 12) and 12 or e.pos.y
 		end
 	),
 	outofboundsdestroysys = system({"outofboundsdestroy"},
@@ -1093,16 +928,6 @@ updatesystems = {
 	harvesteesystem = system({"harvestee"},
 		function(e)
 			if (e.harvestee.beingharvested) then
-				-- local dr = 1
-
-				-- e.harvestee.indicator_radius += dr
-				
-				-- if e.harvestee.indicator_radius < 1 
-				-- 	or e.harvestee.indicator_radius > 3 then
-					
-				-- 	-- e.harvestee.indicator_radius -= 1
-				-- 	dr = -dr
-				-- end
 
 				if (e.harvestee.indicator_radius > 2) then
 					e.harvestee.indicator_radius -= 1
@@ -1122,17 +947,6 @@ updatesystems = {
 			asteroids = getentitiesbysubclass("asteroid", world)
 
 			for a in all(asteroids) do
-				-- local harvest_distance =
-				-- 	(a.id.size == "large")
-				-- 	and c.harvest_distance_large
-				-- 	or c.harvest_distance_small
-
-				-- a.harvestee.beingharvested = 
-				-- 	distance(e.pos.x, e.pos.y, a.pos.x, a.pos.y) <= harvest_distance
-				-- 	and true
-				-- 	or false
-
-				if not (getplayer()) then a.harvestee.beingharvested = false end
 
 				local harvest_distance
 
@@ -1153,10 +967,6 @@ updatesystems = {
 						sfx(7)
 					else
 						e.harvester.progress = 0
-						-- e.playerweapon.ammo = min(
-						-- 	e.playerweapon.ammo + 1,
-						-- 	c.player_ammo_max
-						-- )
 						if (e.playerweapon.ammo < c.player_ammo_max) then
 							e.playerweapon.ammo += 1
 							sfx(8)
@@ -1171,13 +981,15 @@ updatesystems = {
 	),
 
 	-- enemy weapon system
+	-- enemy firing and attacking behaviour
 	enemyweaponsystem = system({"eweapon"},
 		function(e)
 			if (e.eweapon.cooldown > 0) then
 				e.eweapon.cooldown -= 1;
 			else 
 
-				-- RILEY
+				-- riley
+				-- fires one shot aiming at the player
 				if (e.eweapon.type == "riley") then
 
 					if gameplaystate.isrunning then sfx(15) end
@@ -1193,12 +1005,15 @@ updatesystems = {
 						e.eweapon.cooldown = c.riley_firerate
 					end
 
-				-- DULCE
+				-- dulce
+				-- "carpeting bombing" and leaves a line of bullets
 				elseif (e.eweapon.type == "dulce") then
 
 					ebullet(gecx(e), gecy(e), 0, c.dulce_bullet_vy)
 					e.eweapon.cooldown = c.dulce_firerate
 
+				-- hammerhead
+				-- fires two lateral shot on each side
 				elseif (e.eweapon.type == "hammerhead") then
 
 					if gameplaystate.isrunning then sfx(15) end
@@ -1226,7 +1041,8 @@ updatesystems = {
 
 					e.eweapon.cooldown = c.hammerhead_firerate
 
-				-- AUGUSTUS
+				-- augustus
+				-- fires three shot in an arc
 				elseif (e.eweapon.type == "augustus") then
 
 					if gameplaystate.isrunning then sfx(15) end
@@ -1246,7 +1062,9 @@ updatesystems = {
 
 					e.eweapon.cooldown = c.augustus_firerate
 
-				-- KOLTAR
+				-- koltar
+				-- fires four shot in alternative modes
+				-- axis aligned and diagonally
 				elseif (e.eweapon.type == "koltar") then
 
 					if gameplaystate.isrunning then sfx(15) end
@@ -1315,7 +1133,8 @@ updatesystems = {
 	controlsys = system({"playercontrol"},
 		function(e)
 
-			-- ALTERNATE IMPLEMENTATION
+			-- alternate implementation
+			-- codes allowed to remain
 			-- for documentation and educational purpose
 
 			-- local speed_value = (btn(4)) and c.player_speed_slow or c.player_speed_fast
@@ -1361,9 +1180,9 @@ updatesystems = {
 			if (btn(2)) e.vel.y = -speed
 			if (btn(3)) e.vel.y = speed
 
-			-- diagonal etiquette
+			-- diagonal movement etiquette
 			if (e.vel.x * e.vel.y ~= 0) then
-				e.vel.x *= cos(0.125) -- 45 degrees
+				e.vel.x *= cos(0.125)
 				e.vel.y *= -sin(0.125) -- y axis is inverted
 			end
 
@@ -1404,7 +1223,6 @@ drawsys = {
 		end
 	),
 
-	-- draw actors
 	system({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "actor") then
@@ -1414,7 +1232,7 @@ drawsys = {
 					palforhitframe(e)
 				end
 
-				e:draw() -- the important line
+				e:draw()
 
 				if (e.hitframe) then 
 					e.hitframe = false
@@ -1425,11 +1243,10 @@ drawsys = {
 		end
 	),
 
-	-- draw projectiles
 	system({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "projectile") then
-					e:draw() -- the important line
+					e:draw()
 			end
 		end
 	),
@@ -1438,7 +1255,7 @@ drawsys = {
 	system({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "particle") then
-					e:draw() -- the important line
+					e:draw()
 			end
 		end
 	),
@@ -1475,18 +1292,11 @@ drawsys = {
 					end
 				end
 
-			-- elseif (e.id.class == "enemy") then
-			-- 	-- if (e.id.subclass == "hammerhead") then
-			-- 		-- left gauge, hp
-			-- 		for i=1,(e.hp) do
-			-- 			circ(e.pos.x-5, e.pos.y + 16 - i*2, 0, 11)
-			-- 		end
-			-- 	-- end
 			end
 		end
 	),
 
-	-- draw collision boxes, for debug purposes
+	-- draw collision boxes, for debug purpose when enabled
 	system({"pos", "box"},
 		function(e)
 			if (c.draw_hitbox_debug) then
@@ -1497,7 +1307,7 @@ drawsys = {
 }
 
 -->8
--- spawner functions
+-- spawning functions
 spawn = {
 	cooldown_enemy,
 	cooldown_asteroid,
@@ -1515,12 +1325,12 @@ end
 
 function spawner_update()
 
+	-- spawning player's remains in the previous attempts
 	for c in all(g.carcasses) do
 		if g.travelled_distance == c.y then
 			carcass(c.x, -16)
 		end
 	end
-
 
 	if spawn.cooldown_enemy > 0 then
 		spawn.cooldown_enemy -= 1
@@ -1539,6 +1349,8 @@ function spawner_update()
 	end
 end
 
+-- utility functions
+-- random x spawn and y spawn
 function rndxspawn()
 	return c.bounds_safe + rnd(127 - c.bounds_safe*2)
 end
@@ -1560,7 +1372,7 @@ function spawn_enemy()
 		_difficulty = rnd_one_among({"low", "medium"})
 	end
 
-	-- LOW DIFFICULTY
+	-- low difficulty
 	if (_difficulty == "low") then
 
 		local _formation = rnd_one_among({"riley", "hammerhead", "augustus"})
@@ -1581,7 +1393,7 @@ function spawn_enemy()
 
 		spawn.last.unit = _formation
 
-	-- MEDIUM DIFFICULTY
+	-- medium difficulty
 	elseif (_difficulty == "medium") then
 
 		local _die, _formation
@@ -1592,7 +1404,7 @@ function spawn_enemy()
 		if (0.6<=_die and _die<=0.9) then _formation = "hammerhead" end
 		if (0.9<_die) then _formation = "koltar" end
 
-		-- extra condition for koltar
+		-- extra conditions for koltar
 		if ((_formation == "koltar") and
 			-- only spawns from 25% of the progress
 			-- not spawning twice in a row
@@ -1636,7 +1448,7 @@ function spawn_enemy()
 		if (0.6<=_die and _die<=0.9) then _formation = "augustus" end
 		if (0.9<_die) then _formation = "koltar" end
 
-		-- extra condition for koltar
+		-- extra conditions for koltar
 		if (_formation == "koltar"
 			-- only spawns from 50% of the progress
 			-- not spawning twice in a row
@@ -1692,9 +1504,9 @@ function spawn_asteroid()
 	_vx = rnd(0.3)
 	_vy = rnd(2)
 
+	-- set asteroids to always move towards the center from sides, horizontally
 	_vx = (_x < 64) and _vx or -_vx 
 
-	-- asteroid(_type, _x, _y, 0.2-rnd(0.4), rnd(2))
 	asteroid(_type, _x, _y, _vx, _vy)
 end
 
@@ -1707,31 +1519,6 @@ function spawn_from_asteroid(_type, _x, _y)
 		asteroid(_type, _x, _y, rnd(3)-1.5, rnd(3)-1.5)
 	end
 end
-
--- function spawn_cooldown_reset()
--- 	spawncooldown = c.spawnrate_min + flr(rnd(c.spawnrate_range))
--- end
-
--- function spawn()
--- 	local die = ceil(rnd(6))
--- 	-- local die = 1
-
--- 	if (die == 2) then
--- 		hammerhead(rnd(128), -rnd(60))
--- 	elseif (die == 1) then
--- 		riley(rnd(128), -rnd(60))
--- 	elseif (die == 3) then
--- 		dulce(rnd(128), -rnd(60))	
--- 	elseif (die == 4) then
--- 		augustus(rnd(128), -rnd(60))
--- 	elseif (die == 5) then
--- 		koltar(rnd(128), -rnd(60))
--- 	elseif (die == 6) then
--- 		local _type = rnd_one_among({"small", "medium", "large"})
--- 		asteroid(_type, rnd(128), rnd(128), 0, rnd(2))
--- 	end
--- 	spawn_cooldown_reset()
--- end
 
 screenshake_timer = 0
 screenshake_mag = 0
@@ -1758,56 +1545,34 @@ function screenshake_update()
 end
 
 function spawn_explosion(_size, _x, _y)
-	-- consists of spark and smoke
+	-- consists of spark and smokes
 
 	-- sfx(rnd_one_among({20, 21, 22, 23, 24}))
 	sfx(22)
 
 	if _size == "small" then
 		rectspark(_x, _y, 6, 8, 8, c.spark_color_1)
-		puffsofsmoke(
+		spawn_smokes(
 			c.explosion_small_amt + rnd(c.explosion_small_amt_range),
 			_x, _y
 		)
 
 	elseif _size == "medium" then
 		rectspark(_x, _y, 10, 10, c.spark_color_1)
-		puffsofsmoke(
+		spawn_smokes(
 			c.explosion_medium_amt + rnd(c.explosion_medium_amt_range),
 			_x, _y
 		)
 	elseif _size == "large" then
 		rectspark(_x, _y, 15, 12, c.spark_color_1)
-		puffsofsmoke(
+		spawn_smokes(
 			c.explosion_large_amt + rnd(c.explosion_large_amt_range),
 			_x, _y
 		)
 	end
 end
 
-function puffsofsmoke(_maxamt, _x, _y)
-
-	-- local smoke_offset = 16
-
-	-- for i=1, _maxamt do	
-	-- 	smoke(
-	-- 		_x + rnd(smoke_offset) - 8,
-	-- 		_y + rnd(smoke_offset) - 8,
-	-- 		-- (rnd()-1)/5,
-	-- 		-- (rnd()-1)/5
-	-- 		0,
-	-- 		0
-	-- 	)
-	-- end
-
-	-- for i=1, 10 do	
-	-- 	smoke(
-	-- 		_x + rnd(32) - 20,
-	-- 		_y + rnd(32) - 20,
-	-- 		0,
-	-- 		-1
-	-- 	)
-	-- end
+function spawn_smokes(_maxamt, _x, _y)
 
 	for i=1, _maxamt do
 		smoke(
@@ -1872,13 +1637,6 @@ function player(_x, _y)
 			spr(0, self.pos.x-3+_offset, self.pos.y-4+_offset, 1.2, 2)
 
 			spr(28+flr(self.ani.frame), self.pos.x-1, self.pos.y+9, 1, 1)
-
-			-- local center = get_center(self)
-			-- circ(gecx(self), gecy(self), 1, 11)
-			-- pal()
-			-- color(2)
-			-- print(self.ani.frame)
-			-- print("nd")
 		end
 	})
 end
@@ -2039,6 +1797,7 @@ end
 
 function koltar(_x, _y)
 
+	-- miniboss, will play sfx once spawned
 	sfx(17)
 	add(world, {
 		id = {
@@ -2136,17 +1895,12 @@ function asteroid(_type, _x, _y, _vx, _vy)
 				circfill(gecx(self), gecy(self),
 					self.harvestee.indicator_radius, 11)
 			end
-			-- print(self.id.size, self.pos.x, self.pos.y)
-			-- print(self.harvestee.beingharvested, self.pos.x, self.pos.y)
 		end
 	})
 end
 
 -- friendly bullet
 function fbullet(_x, _y)
-
-	-- local speed = -12
-	-- local speed = -3
 
     add(world, {
         id = {
@@ -2165,33 +1919,16 @@ function fbullet(_x, _y)
             w = 5,
             h = 6
 		},
-		-- ani = {
-		-- 	frame = 0, -- determining which frame of the animation is being displayed
-		-- 	framerate = 1, -- how fast the frame rotates, 1 is one frame per one tick
-		-- 	framecount = 2, -- the amount of frames in the animation
-		-- 	loop = false,
-		-- },
 		outofboundsdestroy = true,
 		drawtag = "projectile",
 		draw = function(self)
-			-- _offset = (_offset) and _offset or 0
-			-- if (flr(self.ani.frame) == 0) then
-			-- 	spr(18, self.pos.x, self.pos.y, 1, 1) -- muzzleflash doesn't have shadow
-			-- elseif (flr(self.ani.frame) == 1) then
-			-- 	spr(19, self.pos.x+_offset, self.pos.y+_offset, 1, 1)
-			-- end
-			
 			spr(19, self.pos.x, self.pos.y, 1, 1)
-			-- debug
-			-- print(self.ani.frame, self.pos.x, self.pos.y, 7)
 		end
     })
 end
 
 -- hostile/enemy bullet
 function ebullet(_x, _y, _vx, _vy)
-
-	-- spawn_fragments(_x, _y)
 
 	add(world, {
 		id = {
@@ -2216,9 +1953,6 @@ function ebullet(_x, _y, _vx, _vy)
 		draw = function(self, _offset)
 			_offset = (_offset) and _offset or 0
 			spr(20, self.pos.x-1+_offset, self.pos.y-1+_offset, 1, 1)
-			-- circ(self.pos.x, self.pos.y, 0, 8)
-			-- circ(gecx(self), gecy(self), 0, 8)
-			-- spawn_fragments(gecx(self), gecy(self))
 		end
 	})
 end
@@ -2238,32 +1972,12 @@ function rectspark(_x, _y, _initradius, _lifetime_max, _color)
 			lifetime = 0,
 			lifetime_max = _lifetime_max,
 		},
-		-- ani = {
-		-- 	frame = 1, -- when working with table indexes, do not ever let it go zero
-		-- 	framerate = 1,
-		-- 	framecount = 16,
-		-- 	loop = false
-		-- },
 		spark = {
 			radius = _initradius,
 			color = _color
 		},
 		drawtag = "particle",
 		draw = function(self)
-
-			-- local frame = flr(self.ani.frame)
-			-- local halo_offset = -1
-
-			-- -- pal(8, f820t[frame])
-
-			-- rect(
-			-- 	self.pos.x - self.explosion.radius + halo_offset,
-			-- 	self.pos.y - self.explosion.radius + halo_offset,
-			-- 	self.pos.x + self.explosion.radius + halo_offset,
-			-- 	self.pos.y + self.explosion.radius + halo_offset,
-			-- 	8
-			-- )
-			
 			rect(
 				self.pos.x - self.spark.radius,
 				self.pos.y - self.spark.radius,
@@ -2271,14 +1985,6 @@ function rectspark(_x, _y, _initradius, _lifetime_max, _color)
 				self.pos.y + self.spark.radius,
 				self.spark.color
 			)
-			
-			-- spr(64, self.pos.x - 16, self.pos.y - 16, 4, 4)
-			-- pal()
-
-			-- debug
-			-- print(f720t[frame], self.pos.x, self.pos.y, explosion_animation_table[1][1])
-			-- print(self.explosion.radius, self.pos.x, self.pos.y, explosion_animation_table[1][1])
-			-- printh(frame, "log")
 		end
 	})
 end
@@ -2311,7 +2017,7 @@ function smoke (_x, _y, _vx, _vy)
 	})
 end
 
--- impact pieces
+-- impact particles, spawned when bullets hit
 function fragment(_x, _y, _angle)
 
 	local vel = c.fragment_move_vel_min + rnd(c.fragment_move_vel_range)
@@ -2337,7 +2043,6 @@ function fragment(_x, _y, _angle)
 		},
 		drawtag = "particle",
 		draw = function(self)
-			-- ngon(self.pos.x, self.pos.y, self.fragment.radius, 4, 10)
 			circfill(self.pos.x, self.pos.y, self.fragment.radius, 10)
 		end
 	})
@@ -2397,8 +2102,6 @@ function star(_x, _y, _radius, _drawtag)
 				4,
 				13
 			)
-			-- color()
-			-- print("star", self.pos.x, self.pos.y)
 		end
 	})
 end

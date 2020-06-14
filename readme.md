@@ -20,6 +20,12 @@ The game was meant to be part of a much larger universe spanning across multiple
 
 Besides gamedev as what I absolutely loved and another project to hone my skills, this game was a satisfying closure to one of my old incomplete works.
 
+## Lives and reset savedata
+
+The game allows only a limited number of attempts to reach the objective destination. Gameplay will no longer be accessible once the player has used up all ships, and the main menu will prompt the player **reset savedata** to try again.
+
+**This can be performed from the pause menu** (default keybinding on Pico-8 is `P`).
+
 ## Technicality
 
 ### State machine
@@ -76,7 +82,7 @@ Each **entity** is comprised of multiple **components**, each represented as a s
 An example of a system is the `motionsys` (for "motion system"):
 
     motionsys = system({"pos", "vel"},
-		function(e) 
+		function(e)
 			e.pos.x += e.vel.x
 			e.pos.y += e.vel.y
 		end
