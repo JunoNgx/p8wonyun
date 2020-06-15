@@ -5,10 +5,10 @@
 * **Language/Framework**: Lua (Pico-8 subset)
 * **Release date**: 16 June 2020
 
-## Release
+## Releases
 
-* [Itch.io](https://junongx.itch.io/wonyun-trench-run)
-* PICO-8 Cartridge Page
+* **[Itch.io]**(https://junongx.itch.io/wonyun-trench-run)
+* **[PICO-8 Cartridge Page]**(https://www.lexaloffle.com/bbs/?pid=78124)
 
 ## Overview 
 

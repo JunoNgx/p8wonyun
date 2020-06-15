@@ -359,7 +359,6 @@ splashstate = {
 		end
 	end,
 	draw = function()
-		-- draw logo at sprite number 64
 		spr(136, 32, 48, 64, 32)
 	end
 }
