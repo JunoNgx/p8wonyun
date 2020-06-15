@@ -5,6 +5,11 @@
 * **Language/Framework**: Lua (Pico-8 subset)
 * **Release date**: 16 June 2020
 
+## Release
+
+* [Itch.io](https://junongx.itch.io/wonyun-trench-run)
+* PICO-8 Cartridge Page
+
 ## Overview 
 
 **Wonyun Trench Run** focuses on a group of pilot stationed at the titular Wonyun outpost, who encountered an invasion and decided to one by one make the run through the siege to alert the mothership.
@@ -56,8 +61,8 @@ Each **entity** is comprised of multiple **components**, each represented as a s
 
     {
         id = {
-			class = "bullet",
-			subclass = "fbullet"
+            class = "bullet",
+            subclass = "fbullet"
         },
         pos = {
             x=_x,
@@ -70,22 +75,22 @@ Each **entity** is comprised of multiple **components**, each represented as a s
         box = {
             w = 5,
             h = 6
-		},
-		outofboundsdestroy = true, -- object is destroyed when out of gameplay bounds
-		drawtag = "projectile", -- for layer drawing
-		draw = function(self)
-			spr(19, self.pos.x, self.pos.y, 1, 1)
+        },
+        outofboundsdestroy = true, -- object is destroyed when out of gameplay bounds
+        drawtag = "projectile", -- for layer drawing
+        draw = function(self)
+        spr(19, self.pos.x, self.pos.y, 1, 1)
 		end
     }
 
 An example of a system is the `motionsys` (for "motion system"):
 
     motionsys = system({"pos", "vel"},
-		function(e)
-			e.pos.x += e.vel.x
-			e.pos.y += e.vel.y
-		end
-	)
+        function(e)
+            e.pos.x += e.vel.x
+            e.pos.y += e.vel.y
+        end
+    )
 
 Entities are stored in a global table `world = {}`, which is iterated over by multiple systems (see tab 3 for systemic updates and tab 4 for rendering/graphic systems).
 
@@ -96,10 +101,6 @@ Most of the important values that affect gameplay are declared in the global con
 ### Hitbox debug mode
 
 To view the actual hitboxes of entities, change `c.draw_hitbox_debug` (the same table mentioned above) to `true`.
-
-## Release
-TODO itch io
-TODO pico 8 page
 
 ## Feedback
 
