@@ -7,8 +7,8 @@
 
 ## Releases
 
-* **[Itch.io]**(https://junongx.itch.io/wonyun-trench-run)
-* **[PICO-8 Cartridge Page]**(https://www.lexaloffle.com/bbs/?pid=78124)
+* **[Itch.io](https://junongx.itch.io/wonyun-trench-run)**
+* **[PICO-8 Cartridge Page](https://www.lexaloffle.com/bbs/?pid=78124)**
 
 ## Overview 
 
