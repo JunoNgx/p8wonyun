@@ -97,10 +97,10 @@ Most of the important values that affect gameplay are declared in the global con
 
 To view the actual hitboxes of entities, change `c.draw_hitbox_debug` (the same table mentioned above) to `true`.
 
-## Feedback
-
-Do feel free to open an issue to this repository for feedback and suggestion. Code critiques are especially welcomed.
-
 ## Release
 TODO itch io
 TODO pico 8 page
+
+## Feedback
+
+Do feel free to open an issue to this repository for feedback and suggestion. Code critiques are especially welcomed.

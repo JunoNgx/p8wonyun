@@ -14,7 +14,7 @@ c = {
 
 	shadow_offset = 2,
 	bounds_offset_sides = 8,
-	bounds_offset_top = 64, -- a lot more things happen on top of the screen
+	bounds_offset_top = 32, -- a lot more things happen on top of the screen
 	bounds_offset_bottom = 8,
 	bounds_safe = 16,
 	spawn_bound_lf = 16,
@@ -38,9 +38,9 @@ c = {
 	harvest_distance_large = 20,
 	harvest_complete = 60, -- 2 seconds
 
-	fbullet_speed = -8,
+	fbullet_speed = -12,
 
-	spawnrate_enemy_min = 60,
+	spawnrate_enemy_min = 75,
 	spawnrate_enemy_range = 30,
 	spawnrate_asteroid_min = 45,
 	spawnrate_asteroid_max = 45,
@@ -323,6 +323,9 @@ function rnd_one_among(object)
 	return object[die]
 end
 
+-- due to the max positive integer value in pico-8 being 32767
+-- this function won't be able to handle distances longer than
+-- 181 pixels
 function distance(x1, y1, x2, y2)
 	local dx, dy = x2 - x1, y2 - y1
 	return sqrt(dx*dx + dy*dy)
@@ -872,10 +875,17 @@ updatesystems = {
 	),
 	keepinscreenssys = system({"keepinscreen"},
 		function(e)
-			e.pos.x = min(e.pos.x, 115)
-			e.pos.x = max(e.pos.x, 12)
-			e.pos.y = min(e.pos.y, 115)
-			e.pos.y = max(e.pos.y, 12)
+
+			-- alternative implementation
+			-- e.pos.x = min(e.pos.x, 115)
+			-- e.pos.x = max(e.pos.x, 12)
+			-- e.pos.y = min(e.pos.y, 115)
+			-- e.pos.y = max(e.pos.y, 12)
+
+			if (e.pos.x > 115) then e.pos.x = 115 end
+			if (e.pos.x < 12) then e.pos.x = 12 end
+			if (e.pos.y > 115) then e.pos.y = 115 end
+			if (e.pos.y < 0) then e.pos.y = 0 end
 		end
 	),
 	outofboundsdestroysys = system({"outofboundsdestroy"},
@@ -1503,7 +1513,7 @@ function spawn_asteroid()
 	_type = (0.5<=_die and _die<=0.75) and "medium" or _type
 	_type = (0.75<_die) and "small" or _type
 
-	_x = rnd(128)
+	_x = rndxspawn()
 	_y = rndyspawn()
 	_vx = rnd(0.3)
 	_vy = rnd(2)
