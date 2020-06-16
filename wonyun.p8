@@ -93,6 +93,9 @@ c = {
 	fragment_move_vel_range = 1.5,
 	fragment_amt_min = 5,
 	fragment_amt_range = 5,
+
+	key_a = 5,
+	key_b = 4
 }
 
 -- sfx note
@@ -377,14 +380,14 @@ menustate = {
 		if (self.page == "main") then
 			if (btnp(0)) then self.page = "credits" sfx(2) end
 			if (btnp(1)) then self.page = "manual" sfx(2) end
-			if (g.ship_no<13 and btnp(4)) then
+			if (g.ship_no<13 and btnp(c.key_a)) then
 				transit(captionstate)
 				sfx(3)
 			end
 		elseif (self.page == "credits") then
-			if (btnp(1) or btnp(5)) then self.page = "main" sfx(2) end
+			if (btnp(1) or btnp(c.key_b)) then self.page = "main" sfx(2) end
 		elseif (self.page == "manual") then
-			if (btnp(0) or btnp(5)) then self.page = "main" sfx(2) end
+			if (btnp(0) or btnp(c.key_b)) then self.page = "main" sfx(2) end
 		end
 
 	end,
@@ -511,7 +514,7 @@ captionstate = {
 		fadein()
 	end,
 	update = function()
-		if (btnp(4)) then 
+		if (btnp(c.key_a)) then 
 			if (g.ship_no == 100) then
 				transit(menustate)
 			else
@@ -607,7 +610,7 @@ gameplaystate = {
 
 		-- the bulk of the game logic
 		-- iterating through systems
-		for key,system in pairs(updatesystems) do
+		for _, system in pairs(updatesystems) do
 			system(world)
 		end
 	end,
@@ -618,7 +621,10 @@ gameplaystate = {
 		map(16, 0, 0, self.layer12_y, 16, 32)
 
 		-- main game draw
-		for system in all(drawsys) do
+		-- for _, system in pairs(drawsystems) do
+		-- 	system(world)
+		-- end
+		for system in all(drawsystems) do
 			system(world)
 		end
 
@@ -1184,7 +1190,7 @@ updatesystems = {
 			-- e.vel.x = speed * cos(angle)
 			-- e.vel.y = speed * -sin(angle) -- y axis is inverted
 
-			local speed = (btn(5)) and c.player_speed_slow or c.player_speed_fast
+			local speed = (btn(c.key_b)) and c.player_speed_slow or c.player_speed_fast
 
 			e.vel.x, e.vel.y = 0, 0
 
@@ -1200,7 +1206,7 @@ updatesystems = {
 			end
 
 
-			if (btnp(4)) then
+			if (btnp(c.key_a)) then
 				if (e.playerweapon.cooldown <=0
 					and e.playerweapon.ammo > 0) then
 					sfx(5)
@@ -1217,7 +1223,9 @@ updatesystems = {
 -->8
 -- draw systems
 
-drawsys = {
+-- draw systems are not named to facilitate the usage of `item in all(items)`
+-- which allows access in sequence, which is necessary for layer drawing
+drawsystems = {
 
 	system({"draw", "drawtag"},
 		function(e)
