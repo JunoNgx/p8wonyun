@@ -5,98 +5,7 @@ __lua__
 -- a game by juno nguyen
 -- @junongx
 
--- huge table of constants for game design tuning
-c = {
-	draw_hitbox_debug = false,
-
-	-- destination_distance = 9000, -- in ticks, 9000 ticks = 5 mins
-	destination_distance = 5400,
-
-	shadow_offset = 2,
-	bounds_offset_sides = 8,
-	bounds_offset_top = 32, -- a lot more things happen on top of the screen
-	bounds_offset_bottom = 8,
-	bounds_safe = 16,
-	spawn_bound_lf = 16,
-	spawn_bound_rt = 127 - 16 *2,
-
-	layer1_scroll_speed = 2,
-	layer2_scroll_speed = 3,
-	layer3_scroll_speed = 6,
-
-	player_firerate = 5, -- firerates are all in ticks
-	player_speed_fast = 4,
-	player_speed_slow = 1,
-
-	player_hp_start = 4,
-
-	player_ammo_start = 4,
-	player_ammo_max = 8,
-
-	harvest_distance_small = 12,
-	harvest_distance_medium = 15,
-	harvest_distance_large = 20,
-	harvest_complete = 60, -- 2 seconds
-
-	fbullet_speed = -12,
-
-	spawnrate_enemy_min = 75,
-	spawnrate_enemy_range = 30,
-	spawnrate_asteroid_min = 45,
-	spawnrate_asteroid_max = 45,
-
-	riley_move_vy = 1,
-	riley_firerate = 45,
-	riley_bullet_vel = 1.5,
-
-	dulce_move_vy = 6,
-	dulce_firerate = 7,
-	dulce_bullet_vy = 2,
-
-	augustus_move_vy = 1,
-	augustus_firerate = 30,
-	augustus_bullet_medial_vy = 2,
-	augustus_bullet_lateral_vx = 1,
-	augustus_bullet_lateral_vy = 1.5,
-
-	hammerhead_move_vy = 1,
-	hammerhead_firerate = 30,
-	hammerhead_bullet_vx = 2,
-	hammerhead_bullet_vy = 1,
-
-	koltar_firerate = 30,
-	koltar_bullet_vel = 2,
-
-	asteroid_large_vel_max = 1.5,
-
-	explosion_small_amt = 4,
-	explosion_small_amt_range = 3,
-	explosion_medium_amt = 6,
-	explosion_medium_amt_range = 4,
-	explosion_large_amt = 8,
-	explosion_large_amt_range = 5,
-	
-	star_radius_min = 1,
-	star_radius_range = 3,
-	
-	smoke_radius_init = 10,
-	smoke_radius_range = 5,
-	smoke_decrement_rate = 0.5,
-	
-	carcass_move_vy = 2,
-	
-	spark_increment_rate = 2,	
-	spark_color_1 = 8,
-	spark_color_2 = 10,
-
-	fragment_move_vel_min  = 1,
-	fragment_move_vel_range = 1.5,
-	fragment_amt_min = 5,
-	fragment_amt_range = 5,
-
-	key_a = 5,
-	key_b = 4
-}
+#include C.lua
 
 -- sfx note
 
@@ -173,7 +82,7 @@ end
 
 -- iterate through entire table of entities (world)
 -- run a custom function via the second parameter
-function system(ks, f)
+function System(ks, f)
     return function(system)
         for e in all(system) do
             if _has(e, ks) then f(e) end
@@ -380,14 +289,14 @@ menustate = {
 		if (self.page == "main") then
 			if (btnp(0)) then self.page = "credits" sfx(2) end
 			if (btnp(1)) then self.page = "manual" sfx(2) end
-			if (g.ship_no<13 and btnp(c.key_a)) then
+			if (g.ship_no<13 and btnp(C.KEY_A)) then
 				transit(captionstate)
 				sfx(3)
 			end
 		elseif (self.page == "credits") then
-			if (btnp(1) or btnp(c.key_b)) then self.page = "main" sfx(2) end
+			if (btnp(1) or btnp(C.KEY_B)) then self.page = "main" sfx(2) end
 		elseif (self.page == "manual") then
-			if (btnp(0) or btnp(c.key_b)) then self.page = "main" sfx(2) end
+			if (btnp(0) or btnp(C.KEY_B)) then self.page = "main" sfx(2) end
 		end
 
 	end,
@@ -514,7 +423,7 @@ captionstate = {
 		fadein()
 	end,
 	update = function()
-		if (btnp(c.key_a)) then 
+		if (btnp(C.KEY_A)) then 
 			if (g.ship_no == 100) then
 				transit(menustate)
 			else
@@ -580,10 +489,10 @@ gameplaystate = {
 	end,
 	update = function(self)
 
-		self.layer11_y += c.layer1_scroll_speed
-		self.layer12_y += c.layer1_scroll_speed
-		self.layer2_y += c.layer2_scroll_speed
-		self.layer3_y += c.layer3_scroll_speed
+		self.layer11_y += C.LAYER1_SCROLL_SPEED
+		self.layer12_y += C.LAYER1_SCROLL_SPEED
+		self.layer2_y += C.LAYER2_SCROLL_SPEED
+		self.layer3_y += C.LAYER3_SCROLL_SPEED
 
 		if (self.layer11_y > 255) then self.layer11_y = -256 end
 		if (self.layer12_y > 255) then self.layer12_y = -256 end
@@ -592,7 +501,7 @@ gameplaystate = {
 
 		g.travelled_distance += 1;
 
-		if (g.travelled_distance >= c.destination_distance and getplayer() and not self.won) then
+		if (g.travelled_distance >= C.DESTINATION_DISTANCE and getplayer() and not self.won) then
 			exitgameplay("win")
 
 			p = getplayer()
@@ -650,7 +559,7 @@ gameplaystate = {
 
 		pal()
 		
-		local progress = 128*(g.travelled_distance/c.destination_distance)
+		local progress = 128*(g.travelled_distance/C.DESTINATION_DISTANCE)
 		line(0, 128, 0, 128 - progress, 14)
 
 		-- for debug
@@ -744,7 +653,7 @@ end
 -- update system
 
 updatesystems = {
-	timersys = system ({"timer"},
+	timersys = System ({"timer"},
 		function(e)
 			if (e.timer.lifetime > 0) then
 				e.timer.lifetime -= 1
@@ -754,13 +663,13 @@ updatesystems = {
 			end
 		end
 	),
-	motionsys = system({"pos", "vel"},
+	motionsys = System({"pos", "vel"},
 		function(e) 
 			e.pos.x += e.vel.x
 			e.pos.y += e.vel.y
 		end
 	),
-	animationsys = system({"ani"},
+	animationsys = System({"ani"},
 		function(e)
 			if (e.ani.loop) then
 				e.ani.frame += e.ani.framerate
@@ -775,7 +684,7 @@ updatesystems = {
 			
 		end
 	),
-	collisionsys = system({"id", "pos", "box"},
+	collisionsys = System({"id", "pos", "box"},
 		function(e1)
 
 			-- player 
@@ -835,7 +744,7 @@ updatesystems = {
 			end
 		end
 	),
-	healthsys = system({"id", "hp"},
+	healthsys = System({"id", "hp"},
 		function(e)
 			if e.hp <= 0 then
 
@@ -878,7 +787,7 @@ updatesystems = {
 			end
 		end
 	),
-	keepinscreenssys = system({"keepinscreen"},
+	keepinscreenssys = System({"keepinscreen"},
 		function(e)
 
 			-- alternative implementation
@@ -893,19 +802,19 @@ updatesystems = {
 			if (e.pos.y < 0) then e.pos.y = 0 end
 		end
 	),
-	outofboundsdestroysys = system({"outofboundsdestroy"},
+	outofboundsdestroysys = System({"outofboundsdestroy"},
 		function(e)
 
-			if (e.pos.x > 127 + c.bounds_offset_sides)
-				or (e.pos.x < 0 - c.bounds_offset_sides)
-				or (e.pos.y > 127 + c.bounds_offset_bottom)
-				or (e.pos.y < 0 - c.bounds_offset_top) then
+			if (e.pos.x > 127 + C.BOUNDS_OFFSET_SIDES)
+				or (e.pos.x < 0 - C.BOUNDS_OFFSET_SIDES)
+				or (e.pos.y > 127 + C.BOUNDS_OFFSET_BOTTOM)
+				or (e.pos.y < 0 - C.BOUNDS_OFFSET_TOP) then
 				
 				del(world, e)
 			end
 		end
 	),
-	particlesystem = system({"particle"},
+	particlesystem = System({"particle"},
 		function(e)
 			if (e.particle.lifetime < e.particle.lifetime_max) then
 				e.particle.lifetime += 1
@@ -914,12 +823,12 @@ updatesystems = {
 			end
 		end
 	),
-	sparkupdatesystem = system({"spark"},
+	sparkupdatesystem = System({"spark"},
 		function(e)
-			e.spark.radius += c.spark_increment_rate
+			e.spark.radius += C.SPARK_INCREMENT_RATE
 		end
 	),
-	fragmentupdatesystem = system({"fragment"},
+	fragmentupdatesystem = System({"fragment"},
 		function(e)
 			e.fragment.radius *= e.fragment.radius_rate
 			e.vel.x *= e.fragment.vel_rate
@@ -928,14 +837,14 @@ updatesystems = {
 			if (abs(e.vel.x) < 0.01 and abs(e.vel.y) < 0.01) then del(world, e) end
 		end
 	),
-	smokeupdatesystem = system({"smoke"},
+	smokeupdatesystem = System({"smoke"},
 		function(e)
-			e.smoke.radius -= c.smoke_decrement_rate
+			e.smoke.radius -= C.SMOKE_DECREMENT_RATE
 		end
 	),
-	loopingstarsystem = system({"loopingstar"},
+	loopingstarsystem = System({"loopingstar"},
 		function(e)
-			if (e.pos.y > 128+c.bounds_offset_sides) then
+			if (e.pos.y > 128+C.BOUNDS_OFFSET_SIDES) then
 				e.pos.x = rnd(128)
 				e.pos.y = -8
 				e.vel.y = rnd(1.5)
@@ -944,7 +853,7 @@ updatesystems = {
 	),
 
 	-- harvesting system
-	harvesteesystem = system({"harvestee"},
+	harvesteesystem = System({"harvestee"},
 		function(e)
 			if (e.harvestee.beingharvested) then
 
@@ -961,7 +870,7 @@ updatesystems = {
 			end
 		end
 	),
-	harvestersystem = system({"harvester"},
+	harvestersystem = System({"harvester"},
 		function(e)
 			asteroids = getentitiesbysubclass("asteroid", world)
 
@@ -970,23 +879,23 @@ updatesystems = {
 				local harvest_distance
 
 				if (a.id.size == "large") then
-					harvest_distance = c.harvest_distance_large
+					harvest_distance = C.HARVEST_DISTANCE_LARGE
 				elseif (a.id.size == "medium") then
-					harvest_distance = c.harvest_distance_medium
+					harvest_distance = C.HARVEST_DISTANCE_MEDIUM
 				elseif (a.id.size == "small") then
-					harvest_distance = c.harvest_distance_small
+					harvest_distance = C.HARVEST_DISTANCE_SMALL
 				end
 
 				if (distance(gecx(e),gecy(e), gecx(a), gecy(a))
 					<= harvest_distance) then
 
 					a.harvestee.beingharvested = true
-					if (e.harvester.progress < c.harvest_complete) then
+					if (e.harvester.progress < C.HARVEST_COMPLETE) then
 						e.harvester.progress +=1
 						sfx(7)
 					else
 						e.harvester.progress = 0
-						if (e.playerweapon.ammo < c.player_ammo_max) then
+						if (e.playerweapon.ammo < C.PLAYER_AMMO_MAX) then
 							e.playerweapon.ammo += 1
 							sfx(8)
 						end
@@ -1001,7 +910,7 @@ updatesystems = {
 
 	-- enemy weapon system
 	-- enemy firing and attacking behaviour
-	enemyweaponsystem = system({"eweapon"},
+	enemyweaponsystem = System({"eweapon"},
 		function(e)
 			if (e.eweapon.cooldown > 0) then
 				e.eweapon.cooldown -= 1;
@@ -1017,19 +926,19 @@ updatesystems = {
 					if p then -- making sure that player exists
 						local angle, vx, vy
 						angle = atan2(gecx(p)-gecx(e), gecy(p)- gecy(e))
-						vx = c.riley_bullet_vel * cos(angle)
-						vy = c.riley_bullet_vel * sin(angle)
+						vx = C.RILEY_BULLET_VEL * cos(angle)
+						vy = C.RILEY_BULLET_VEL * sin(angle)
 
 						ebullet(gecx(e), gecy(e), vx, vy)
-						e.eweapon.cooldown = c.riley_firerate
+						e.eweapon.cooldown = C.RILEY_FIRERATE
 					end
 
 				-- dulce
 				-- "carpeting bombing" and leaves a line of bullets
 				elseif (e.eweapon.type == "dulce") then
 
-					ebullet(gecx(e), gecy(e), 0, c.dulce_bullet_vy)
-					e.eweapon.cooldown = c.dulce_firerate
+					ebullet(gecx(e), gecy(e), 0, C.DULCE_BULLET_VY)
+					e.eweapon.cooldown = C.DULCE_FIRERATE
 
 				-- hammerhead
 				-- fires two lateral shot on each side
@@ -1040,25 +949,25 @@ updatesystems = {
 					-- going clockwise from top right
 					-- right firing
 					ebullet(e.pos.x+6, e.pos.y+2, 
-						c.hammerhead_bullet_vx,
-						c.hammerhead_bullet_vy
+						C.HAMMERHEAD_BULLET_VX,
+						C.HAMMERHEAD_BULLET_VY
 					)
 					ebullet(e.pos.x+6, e.pos.y+12,
-						c.hammerhead_bullet_vx,
-						c.hammerhead_bullet_vy
+						C.HAMMERHEAD_BULLET_VX,
+						C.HAMMERHEAD_BULLET_VY
 					)
 
 					-- left firing
 					ebullet(e.pos.x-2, e.pos.y+2,
-						-c.hammerhead_bullet_vx,
-						c.hammerhead_bullet_vy
+						-C.HAMMERHEAD_BULLET_VX,
+						C.HAMMERHEAD_BULLET_VY
 					)
 					ebullet(e.pos.x-2, e.pos.y+12,
-						-c.hammerhead_bullet_vx,
-						c.hammerhead_bullet_vy
+						-C.HAMMERHEAD_BULLET_VX,
+						C.HAMMERHEAD_BULLET_VY
 					)
 
-					e.eweapon.cooldown = c.hammerhead_firerate
+					e.eweapon.cooldown = C.HAMMERHEAD_FIRERATE
 
 				-- augustus
 				-- fires three shot in an arc
@@ -1067,19 +976,19 @@ updatesystems = {
 					if gameplaystate.isrunning then sfx(15) end
 
 					-- medial bullet
-					ebullet(e.pos.x+6, e.pos.y+16, 0, c.augustus_bullet_medial_vy)
+					ebullet(e.pos.x+6, e.pos.y+16, 0, C.AUGUSTUS_BULLET_MEDIAL_VY)
 
 					-- lateral bullets
 					ebullet(e.pos.x+5, e.pos.y+16,
-						-c.augustus_bullet_lateral_vx, 
-						c.augustus_bullet_lateral_vy
+						-C.AUGUSTUS_BULLET_LATERAL_VX, 
+						C.AUGUSTUS_BULLET_LATERAL_VY
 					)
 					ebullet(e.pos.x+7, e.pos.y+16,
-						c.augustus_bullet_lateral_vx, 
-						c.augustus_bullet_lateral_vy
+						C.AUGUSTUS_BULLET_LATERAL_VX, 
+						C.AUGUSTUS_BULLET_LATERAL_VY
 					)
 
-					e.eweapon.cooldown = c.augustus_firerate
+					e.eweapon.cooldown = C.AUGUSTUS_FIRERATE
 
 				-- koltar
 				-- fires four shot in alternative modes
@@ -1094,18 +1003,18 @@ updatesystems = {
 						
 						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
 							0,
-							-c.koltar_bullet_vel
+							-C.KOLTAR_BULLET_VEL
 						)
 						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
-							c.koltar_bullet_vel,
+							C.KOLTAR_BULLET_VEL,
 							0
 						)
 						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
 							0,
-							c.koltar_bullet_vel
+							C.KOLTAR_BULLET_VEL
 						)
 						ebullet(e.pos.x+offset_x, e.pos.y+offset_y,
-							-c.koltar_bullet_vel,
+							-C.KOLTAR_BULLET_VEL,
 							0
 						)
 
@@ -1134,7 +1043,7 @@ updatesystems = {
 						e.eweapon.firemode = 0
 					end
 
-					e.eweapon.cooldown = c.koltar_firerate
+					e.eweapon.cooldown = C.KOLTAR_FIRERATE
 
 				end
 			end
@@ -1142,14 +1051,14 @@ updatesystems = {
 	),
 
 	-- player-related systems
-	playerweaponsystem = system({"playerweapon"},
+	playerweaponsystem = System({"playerweapon"},
 	function(e)
 		if (e.playerweapon.cooldown >0) then
 			e.playerweapon.cooldown -= 1
 		end
 	end
 	),
-	controlsys = system({"playercontrol"},
+	controlsys = System({"playercontrol"},
 		function(e)
 
 			-- alternate implementation
@@ -1190,7 +1099,9 @@ updatesystems = {
 			-- e.vel.x = speed * cos(angle)
 			-- e.vel.y = speed * -sin(angle) -- y axis is inverted
 
-			local speed = (btn(c.key_b)) and c.player_speed_slow or c.player_speed_fast
+			local speed = (btn(C.KEY_B))
+				and C.PLAYER_SPEED_SLOW
+				or C.PLAYER_SPEED_FAST
 
 			e.vel.x, e.vel.y = 0, 0
 
@@ -1206,12 +1117,12 @@ updatesystems = {
 			end
 
 
-			if (btnp(c.key_a)) then
+			if (btnp(C.KEY_A)) then
 				if (e.playerweapon.cooldown <=0
 					and e.playerweapon.ammo > 0) then
 					sfx(5)
 					fbullet(e.pos.x, e.pos.y-5)
-					e.playerweapon.cooldown = c.player_firerate
+					e.playerweapon.cooldown = C.PLAYER_FIRERATE
 					e.playerweapon.ammo -= 1
 				end
 			end
@@ -1227,7 +1138,7 @@ updatesystems = {
 -- which allows access in sequence, which is necessary for layer drawing
 drawsystems = {
 
-	system({"draw", "drawtag"},
+	System({"draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "background") then
 				e:draw()
@@ -1236,15 +1147,15 @@ drawsystems = {
 	),
 
 	-- draw shadow
-	system({"draw", "shadow"},
+	System({"draw", "shadow"},
 		function(e)
 			palall(0)
-			e:draw(c.shadow_offset)
+			e:draw(C.SHADOW_OFFSET)
 			pal()
 		end
 	),
 
-	system({"id", "draw", "drawtag"},
+	System({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "actor") then
 
@@ -1264,7 +1175,7 @@ drawsystems = {
 		end
 	),
 
-	system({"id", "draw", "drawtag"},
+	System({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "projectile") then
 					e:draw()
@@ -1273,7 +1184,7 @@ drawsystems = {
 	),
 
 	-- draw particles
-	system({"id", "draw", "drawtag"},
+	System({"id", "draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "particle") then
 					e:draw()
@@ -1281,7 +1192,7 @@ drawsystems = {
 		end
 	),
 
-	system({"draw", "drawtag"},
+	System({"draw", "drawtag"},
 		function(e)
 			if (e.drawtag == "foreground") then
 				e:draw()
@@ -1290,7 +1201,7 @@ drawsystems = {
 	),
 
 	-- diegetic ui draw
-	system({"id", "draw"},
+	System({"id", "draw"},
 		function(e)
 
 			-- 
@@ -1318,9 +1229,9 @@ drawsystems = {
 	),
 
 	-- draw collision boxes, for debug purpose when enabled
-	system({"pos", "box"},
+	System({"pos", "box"},
 		function(e)
-			if (c.draw_hitbox_debug) then
+			if (C.DRAW_HITBOX_DEBUG) then
 				rect(e.pos.x, e.pos.y, e.pos.x + e.box.w, e.pos.y+ e.box.h, 8)
 			end
 		end
@@ -1358,7 +1269,7 @@ function spawner_update()
 	else 
 		spawn_enemy()
 		spawn.cooldown_enemy = 
-			c.spawnrate_enemy_min + rnd(c.spawnrate_enemy_range)
+			C.SPAWNRATE_ENEMY_MIN + rnd(C.SPAWNRATE_ENEMY_RANGE)
 	end
 	
 	if spawn.cooldown_asteroid > 0 then
@@ -1366,18 +1277,18 @@ function spawner_update()
 	else 
 		spawn_asteroid()
 		spawn.cooldown_asteroid = 
-			c.spawnrate_asteroid_min + rnd(c.spawnrate_asteroid_range)
+			C.SPAWNRATE_ASTEROID_MIN + rnd(C.SPAWNRATE_ASTEROID_RANGE)
 	end
 end
 
 -- utility functions
 -- random x spawn and y spawn
 function rndxspawn()
-	return c.bounds_safe + rnd(127 - c.bounds_safe*2)
+	return C.BOUNDS_SAFE + rnd(127 - C.BOUNDS_SAFE*2)
 end
 
 function rndyspawn()
- 	return -c.bounds_safe-rnd(c.bounds_offset_top-c.bounds_safe)
+ 	return -C.BOUNDS_SAFE-rnd(C.BOUNDS_OFFSET_TOP-C.BOUNDS_SAFE)
 end
 
 function spawn_enemy()
@@ -1429,7 +1340,7 @@ function spawn_enemy()
 		if ((_formation == "koltar") and
 			-- only spawns from 25% of the progress
 			-- not spawning twice in a row
-			(g.travelled_distance/c.destination_distance < 0.25
+			(g.travelled_distance/C.DESTINATION_DISTANCE < 0.25
 			or spawn.last.unit == "koltar")) then
 
 			_formation = rnd_one_among({"riley", "dulce", "hammerhead"})
@@ -1473,7 +1384,7 @@ function spawn_enemy()
 		if (_formation == "koltar"
 			-- only spawns from 50% of the progress
 			-- not spawning twice in a row
-			and (g.travelled_distance/c.destination_distance < 0.5
+			and (g.travelled_distance/C.DESTINATION_DISTANCE < 0.5
 			or spawn.last.unit == "koltar")) then
 				
 			_formation = rnd_one_among({"riley", "dulce", "augustus"})
@@ -1572,22 +1483,22 @@ function spawn_explosion(_size, _x, _y)
 	sfx(22)
 
 	if _size == "small" then
-		rectspark(_x, _y, 6, 8, 8, c.spark_color_1)
+		rectspark(_x, _y, 6, 8, 8, C.SPARK_COLOR_1)
 		spawn_smokes(
-			c.explosion_small_amt + rnd(c.explosion_small_amt_range),
+			C.EXPLOSION_SMALL_AMT + rnd(C.EXPLOSION_SMALL_AMT_RANGE),
 			_x, _y
 		)
 
 	elseif _size == "medium" then
-		rectspark(_x, _y, 10, 10, c.spark_color_1)
+		rectspark(_x, _y, 10, 10, C.SPARK_COLOR_1)
 		spawn_smokes(
-			c.explosion_medium_amt + rnd(c.explosion_medium_amt_range),
+			C.EXPLOSION_MEDIUM_AMT + rnd(C.EXPLOSION_MEDIUM_AMT_RANGE),
 			_x, _y
 		)
 	elseif _size == "large" then
-		rectspark(_x, _y, 15, 12, c.spark_color_1)
+		rectspark(_x, _y, 15, 12, C.SPARK_COLOR_1)
 		spawn_smokes(
-			c.explosion_large_amt + rnd(c.explosion_large_amt_range),
+			C.EXPLOSION_LARGE_AMT + rnd(C.EXPLOSION_LARGE_AMT_RANGE),
 			_x, _y
 		)
 	end
@@ -1607,7 +1518,7 @@ function spawn_smokes(_maxamt, _x, _y)
 end
 
 function spawn_fragments(_x, _y)
-	_amt = c.fragment_amt_min + ceil(rnd(c.fragment_amt_range))
+	_amt = C.FRAGMENT_AMT_MIN + ceil(rnd(C.FRAGMENT_AMT_RANGE))
 	for i=1, _amt do 
 		fragment(_x, _y, rnd())
 	end
@@ -1635,9 +1546,9 @@ function player(_x, _y)
             w = 2,
             h = 6
 		},
-		hp = c.player_hp_start,
+		hp = C.PLAYER_HP_START,
 		playerweapon = {
-			ammo = c.player_ammo_start,
+			ammo = C.PLAYER_AMMO_START,
 			cooldown = 0
 		},
 		playercontrol = true,
@@ -1677,7 +1588,7 @@ function hammerhead(_x, _y)
         },
         vel = {
             x=0,
-            y=c.hammerhead_move_vy
+            y=C.HAMMERHEAD_MOVE_VY
         },
         box = {
             w = 9,
@@ -1687,7 +1598,7 @@ function hammerhead(_x, _y)
 		hp = 2,
 		eweapon = {
 			type = "hammerhead",
-			cooldown = c.hammerhead_firerate
+			cooldown = C.HAMMERHEAD_FIRERATE
 		},
 		outofboundsdestroy = true,
 		shadow = true,
@@ -1714,7 +1625,7 @@ function riley(_x, _y)
         },
         vel = {
             x=0,
-            y=c.riley_move_vy
+            y=C.RILEY_MOVE_VY
         },
         box = {
             w = 10,
@@ -1724,7 +1635,7 @@ function riley(_x, _y)
 		hp = 1,
 		eweapon = {
 			type = "riley",
-			cooldown = c.riley_firerate
+			cooldown = C.RILEY_FIRERATE
 		},
 		outofboundsdestroy = true,
 		shadow = true,
@@ -1755,7 +1666,7 @@ function dulce(_x, _y)
 			},
 			vel = {
 				x=0,
-				y=c.dulce_move_vy
+				y=C.DULCE_MOVE_VY
 			},
 			box = {
 				w = 15,
@@ -1794,7 +1705,7 @@ function augustus(_x, _y)
 		},
 		vel = {
 			x = 0,
-			y = c.augustus_move_vy
+			y = C.AUGUSTUS_MOVE_VY
 		},
 		box = {
 			w = 16,
@@ -1804,7 +1715,7 @@ function augustus(_x, _y)
 		hp = 2,
 		eweapon = {
 			type = "augustus",
-			cooldown = c.augustus_firerate
+			cooldown = C.AUGUSTUS_FIRERATE
 		},
 		outofboundsdestroy = true,
 		shadow = true,
@@ -1842,7 +1753,7 @@ function koltar(_x, _y)
 		hp = 3,
 		eweapon = {
 			type = "koltar",
-			cooldown = c.koltar_firerate,
+			cooldown = C.KOLTAR_FIRERATE,
 			firemode = 0,
 		},
 		outofboundsdestroy = true,
@@ -1934,7 +1845,7 @@ function fbullet(_x, _y)
         },
         vel = {
             x=0,
-            y=c.fbullet_speed
+            y=C.FBULLET_SPEED
         },
         box = {
             w = 5,
@@ -2029,7 +1940,7 @@ function smoke (_x, _y, _vx, _vy)
 			lifetime_max = 30
 		},
 		smoke = {
-			radius = c.smoke_radius_init + rnd(c.smoke_radius_range)
+			radius = C.SMOKE_RADIUS_INIT + rnd(C.SMOKE_RADIUS_RANGE)
 		},
 		drawtag = "particle",
 		draw = function(self)
@@ -2041,7 +1952,7 @@ end
 -- impact particles, spawned when bullets hit
 function fragment(_x, _y, _angle)
 
-	local vel = c.fragment_move_vel_min + rnd(c.fragment_move_vel_range)
+	local vel = C.FRAGMENT_MOVE_VEL_MIN + rnd(C.FRAGMENT_MOVE_VEL_RANGE)
 	local _vx, _vy = vel * cos(_angle), vel * sin(_angle)
 
 	add(world,{
@@ -2139,7 +2050,7 @@ function carcass(_x, _y)
 		},
 		vel = {
 			x = 0,
-			y = c.carcass_move_vy
+			y = C.CARCASS_MOVE_VY
 		},
 		-- shadow = true,
 		drawtag = "background",
