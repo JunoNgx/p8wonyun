@@ -34,7 +34,7 @@ The game allows only a limited number of attempts to reach the objective destina
 
 ### State machine
 
-The game is powered by a simple **finite state machine**, including `splashstate`, `menustate`, `captionstate` (handles the message screen prior to gameplay as well as the final outro), `gameplaystate` and a special transitory state `transitstate`, which handles the fading transition using [kometbomb's color fade generaator](https://www.lexaloffle.com/bbs/?tid=28552).
+The game is powered by a simple **finite state machine**, including `SplashState`, `MenuState`, `CaptionState` (handles the message screen prior to gameplay as well as the final outro), `GameplayState` and a special transitory state `TransitState`, which handles the fading transition using [kometbomb's color fade generaator](https://www.lexaloffle.com/bbs/?tid=28552).
 
 ### Entity component system
 
@@ -49,7 +49,9 @@ These two functions drive the bulk of the  game:
         return true
     end
 
-    function system(ks, f)
+    -- iterate through entire table of entities (world)
+    -- run a custom function via the second parameter
+    function System(ks, f)
         return function(system)
             for e in all(system) do
                 if _has(e, ks) then f(e) end
@@ -59,48 +61,51 @@ These two functions drive the bulk of the  game:
 
 Each **entity** is comprised of multiple **components**, each represented as a sub-table with the *key* as the component's identifier. An example is the `fbullet` (for "friendly bullet") entity object:
 
-    {
-        id = {
-            class = "bullet",
-            subclass = "fbullet"
-        },
-        pos = {
-            x=_x,
-            y=_y
-        },
-        vel = {
-            x=0,
-            y=c.fbullet_speed -- a global constant object
-        },
-        box = {
-            w = 5,
-            h = 6
-        },
-        outofboundsdestroy = true, -- object is destroyed when out of gameplay bounds
-        drawtag = "projectile", -- for layer drawing
-        draw = function(self)
-        spr(19, self.pos.x, self.pos.y, 1, 1)
-		end
-    }
+    function FBullet(_x, _y)
+
+        add(world, {
+            id = {
+                class = "bullet",
+                subclass = "fbullet"
+            },
+            pos = {
+                x=_x,
+                y=_y
+            },
+            vel = {
+                x=0,
+                y=C.FBULLET_SPEED -- a constant for game design
+            },
+            box = {
+                w = 5,
+                h = 6
+            },
+            outOfBoundsDestroy = true, -- destroyed when out of screen
+            drawTag = "projectile", -- draw layer
+            draw = function(self)
+                spr(19, self.pos.x, self.pos.y, 1, 1)
+            end
+        })
+    end
 
 An example of a system is the `motionsys` (for "motion system"):
 
-    motionsys = system({"pos", "vel"},
-        function(e)
-            e.pos.x += e.vel.x
-            e.pos.y += e.vel.y
-        end
-    )
+	motionSystem = System({"pos", "vel"},
+		function(e) 
+			e.pos.x += e.vel.x
+			e.pos.y += e.vel.y
+		end
+	)
 
-Entities are stored in a global table `world = {}`, which is iterated over by multiple systems (see tab 3 for systemic updates and tab 4 for rendering/graphic systems).
+Entities are stored in a global table `world = {}`, which is iterated over by multiple systems.
 
 ### Global constant table
 
-Most of the important values that affect gameplay are declared in the global constant table `c = {}` (Lua does not have `const`, but you get the idea), which facilitates game design tuning and iterations.
+Most of the important values that affect gameplay are declared in the separated file `C.lua` (Lua does not have `const`, but you get the idea), which facilitates game design tuning and iterations.
 
 ### Hitbox debug mode
 
-To view the actual hitboxes of entities, change `c.draw_hitbox_debug` (the same table mentioned above) to `true`.
+To view the actual hitboxes of entities, change `C.DRAW_HITBOX_DEBUG` (the same file mentioned above) to `true`.
 
 ## Feedback
 
