@@ -21,7 +21,6 @@ __lua__
 #include systems/UpdateSystems.lua
 #include systems/Spawner.lua
 
-
 #include entities/Asteroid.lua
 #include entities/Augustus.lua
 #include entities/Carcass.lua

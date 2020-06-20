@@ -47,23 +47,6 @@ drawSystems = {
 		end
 	),
 
-	-- draw particles
-	System({"id", "draw", "drawTag"},
-		function(e)
-			if (e.drawTag == "particle") then
-					e:draw()
-			end
-		end
-	),
-
-	System({"draw", "drawTag"},
-		function(e)
-			if (e.drawTag == "foreground") then
-				e:draw()
-			end
-		end
-	),
-
 	-- diegetic ui draw
 	System({"id", "draw"},
 		function(e)
@@ -88,6 +71,23 @@ drawSystems = {
 					end
 				end
 
+			end
+		end
+	),
+	
+	-- draw particles
+	System({"id", "draw", "drawTag"},
+		function(e)
+			if (e.drawTag == "particle") then
+					e:draw()
+			end
+		end
+	),
+
+	System({"draw", "drawTag"},
+		function(e)
+			if (e.drawTag == "foreground") then
+				e:draw()
 			end
 		end
 	),
