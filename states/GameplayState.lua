@@ -13,7 +13,7 @@ GameplayState = {
 	isRunning = true, 
 
 	init = function(self)
-		fadeIn()
+		fadeModule:fade("in", 30)
 		self.isRunning = true
 		world = {}
 		spawnerInit()

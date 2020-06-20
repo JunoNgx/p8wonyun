@@ -4,7 +4,7 @@ CaptionState = {
 	name = "caption",
 	init = function()
 		if (G.shipNo == 100) then sfx(26) end
-		fadeIn()
+		fadeModule:fade("in", 30)
 	end,
 	update = function()
 		if (btnp(C.KEY_A)) then 

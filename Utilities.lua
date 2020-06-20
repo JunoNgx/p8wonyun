@@ -66,83 +66,10 @@ function changePalForHitframe(_entity)
 	if (_entity.hitframe) then palAll(7) end
 end
 
-fader = {
-	time = 0,
-	pos = 0, -- full black, according to the table
-	projectedTimeTaken = 0,
-	projectedVelocity = 0,
-	table= {
-		-- position 15 is black
-		-- position 0 is the original color
-		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-		{1,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
-		{2,2,2,2,2,2,1,1,1,0,0,0,0,0,0},
-		{3,3,3,3,3,3,1,1,1,0,0,0,0,0,0},
-		{4,4,4,2,2,2,2,2,1,1,0,0,0,0,0},
-		{5,5,5,5,5,1,1,1,1,1,0,0,0,0,0},
-		{6,6,13,13,13,13,5,5,5,5,1,1,1,0,0},
-		{7,6,6,6,6,13,13,13,5,5,5,1,1,0,0},
-		{8,8,8,8,2,2,2,2,2,2,0,0,0,0,0},
-		{9,9,9,4,4,4,4,4,4,5,5,0,0,0,0},
-		{10,10,9,9,9,4,4,4,5,5,5,5,0,0,0},
-		{11,11,11,3,3,3,3,3,3,3,0,0,0,0,0},
-		{12,12,12,12,12,3,3,1,1,1,1,1,1,0,0},
-		{13,13,13,5,5,5,5,1,1,1,1,1,0,0,0},
-		{14,14,14,13,4,4,2,2,2,2,2,1,1,0,0},
-		{15,15,6,13,13,13,5,5,5,5,5,1,1,0,0}
-	}
-}
-
-function fadeIn()
-	fade(15, 0, 1)
-end
-
-function fadeOut()
-	fade(0, 15, 1)
-end
-
-function fade(_begin, _final, _durationInSecs)
-	-- 30 ticks equal one second
-	fader.projectedTimeTaken = _durationInSecs * 30
-	-- elementary math of v = d/t
-	fader.projectedVelocity = (_final - _begin) / fader.projectedTimeTaken
-	fader.pos = _begin
-	fader.time = 0
-	fader.status = "working"
-end
-
-function fadeUpdate()
-	if (fader.time < fader.projectedTimeTaken) then
-		fader.time +=1
-		fader.pos += fader.projectedVelocity
-	end
-end
-
-function fadeDraw(_position)
-	for c=0,15 do
-		if flr(_position+1)>=16 then
-			pal(c,0)
-		else
-			pal(
-				c,
-				fader.table[c+1][flr(_position+1)],
-				1
-			)
-		end
-	end
-end
-
-function fadeSetTrigger(_trigger)
-	if _trigger then
-		fader.trigger = _trigger
-		fader.triggerPerformed = false
-	end
-end
-
 -- polygon draw, taken from wiki
 function ngon(x, y, r, n, color)
 	line(color)
-	for i=0,n do
+	for i=0, n do
 		local angle = i/n
 		line(x + r*cos(angle), y + r*sin(angle))
 	end

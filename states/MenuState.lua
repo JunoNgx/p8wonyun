@@ -4,7 +4,7 @@ MenuState = {
 	init = function(self)
 		if (G.shipNo<13) then sfx(1) end
 		self.page = "main"
-		fadeIn()
+		fadeModule:fade("in", 30)
 		saveProgress()
 	end,
 	update = function(self)

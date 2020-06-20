@@ -9,6 +9,8 @@ __lua__
 #include Utilities.lua
 #include Captions.lua
 
+#include modules/FadeModule.lua
+
 #include states/SplashState.lua
 #include states/MenuState.lua
 #include states/GameplayState.lua
@@ -51,7 +53,7 @@ function _init()
 	loadProgress()
 
 	gameState = SplashState
-	--  gameState = MenuState
+	-- gameState = MenuState
 	-- gameState = GameplayState
 	-- gameState = CaptionState
 	gameState:init()
@@ -59,7 +61,7 @@ end
 
 function _update()
 	gameState:update()
-	fadeUpdate()
+	fadeModule:update()
 end
 
 function _draw()
@@ -67,7 +69,7 @@ function _draw()
 	if (gameState.name ~= "transit") then cls() end
 
 	gameState:draw()
-	fadeDraw(fader.pos)
+	fadeModule:draw()
 end
 
 -- custom menu item in the pause menu

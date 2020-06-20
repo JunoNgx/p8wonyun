@@ -19,7 +19,7 @@ TransitState = {
 }
 
 function transit(_state)
-	fadeOut()
+	fadeModule:fade("out", 30)
 	gameState = TransitState
 	TransitState.destinationState = _state
 	TransitState.timer = 28
