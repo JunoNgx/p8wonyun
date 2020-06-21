@@ -5,7 +5,7 @@ __lua__
 -- a game by juno nguyen
 -- @junongx
 
-#include C.lua
+#include Constants.lua
 #include Utilities.lua
 #include Captions.lua
 
