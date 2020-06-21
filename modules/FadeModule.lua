@@ -27,7 +27,7 @@ fadeModule = {
 
 		self.timer = 0
 		self.projectedTimeTaken = _durationInTicks
-		
+
 		local _beginPos, _finalPos
 		if (_mode == "in") then
 			_beginPos = 15
@@ -41,13 +41,12 @@ fadeModule = {
 		self.velocity = (_finalPos - _beginPos)/_durationInTicks
 	end,
 	update = function(self)
-		if (self.timer < self.projectedTimeTaken) then
-			self.timer += 1
-			self.position += self.velocity
-		end
+    if self.timer >= self.projectedTimeTaken then return end
+		self.timer += 1
+		self.position += self.velocity
 	end,
 	draw = function(self)
-		for c=0,15 do
+		for c=0, 15 do
 			pal(c, self.table[c+1][flr(self.position+1)], 1)
 		end
 	end
