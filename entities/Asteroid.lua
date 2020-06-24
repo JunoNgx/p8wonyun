@@ -51,7 +51,7 @@ function Asteroid(_type, _x, _y, _vx, _vy)
 		shadow = true,
 		drawTag = "actor",
 		draw = function(self, _offset)
-			_offset = (_offset) and _offset or 0
+			_offset = _offset or 0
 			spr(self.asteroid.sprite, self.pos.x+_offset, self.pos.y+_offset,
 				self.asteroid.spriteSize, self.asteroid.spriteSize)
 

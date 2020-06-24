@@ -41,7 +41,7 @@ fadeModule = {
 		self.velocity = (_finalPos - _beginPos)/_durationInTicks
 	end,
 	update = function(self)
-    if self.timer >= self.projectedTimeTaken then return end
+    	if self.timer >= self.projectedTimeTaken then return end
 		self.timer += 1
 		self.position += self.velocity
 	end,

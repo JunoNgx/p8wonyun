@@ -15,7 +15,7 @@ function Carcass(_x, _y)
 		-- shadow = true,
 		drawTag = "background",
 		draw = function(self, _offset)
-			_offset = (_offset) and _offset or 0
+			_offset = _offset or 0
 			spr(40, self.pos.x-3+_offset, self.pos.y-4+_offset, 2, 2)
 		end,
 	})

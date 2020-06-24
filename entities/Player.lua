@@ -36,7 +36,7 @@ function Player(_x, _y)
 		shadow = true,
 		drawTag = "actor",
 		draw = function(self, _offset)
-			_offset = (_offset) and _offset or 0
+			_offset = _offset or 0
 			spr(0, self.pos.x-3+_offset, self.pos.y-4+_offset, 1.2, 2)
 
 			spr(28+flr(self.ani.frame), self.pos.x-1, self.pos.y+9, 1, 1)

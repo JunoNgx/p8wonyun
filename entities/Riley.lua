@@ -29,7 +29,7 @@ function Riley(_x, _y)
 		shadow = true,
 		drawTag = "actor",
 		draw = function(self, _offset)
-			_offset = (_offset) and _offset or 0
+			_offset = _offset or 0
 			spr(34, self.pos.x+_offset, self.pos.y+_offset, 2, 2)
 		end
     })
