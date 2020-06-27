@@ -30,6 +30,16 @@ The game allows only a limited number of attempts to reach the objective destina
 
 **This can be performed from the pause menu** (default keybinding on Pico-8 is `P`).
 
+## Running
+
+1. Install and purchase Pico-8 
+2. Clone this repository in your cart folder (which varies from OS to OS, on Windows it should be `C:\Users[YOUR USERNAME]\AppData\Roaming\pico-8\carts` by default).
+3. From Pico-8 console, run:
+
+
+    load p8wonyun/wonyun.p8
+    run
+
 ## Technicalities
 
 ### State machine
