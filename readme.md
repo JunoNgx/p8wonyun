@@ -28,11 +28,11 @@ Besides gamedev as what I absolutely loved and another project to hone my skills
 
 The game allows only a limited number of attempts to reach the objective destination. Gameplay will no longer be accessible once the player has used up all ships, and the main menu will prompt the player **reset savedata** to try again.
 
-**This can be performed from the pause menu** (default keybinding on Pico-8 is `P`).
+**This can be performed from the pause menu** (default keybinding on Pico-8 is `P` or `Enter`).
 
 ## Running
 
-1. Install and purchase Pico-8 
+1. Purchase and install Pico-8.
 2. Clone this repository in your cart folder (which varies from OS to OS, on Windows it should be `C:\Users[YOUR USERNAME]\AppData\Roaming\pico-8\carts` by default).
 3. From Pico-8 console, run:
 
@@ -40,11 +40,12 @@ The game allows only a limited number of attempts to reach the objective destina
     load p8wonyun/wonyun.p8
     run
 
+
 ## Technicalities
 
 ### State machine
 
-The game is powered by a simple **finite state machine**, including `SplashState`, `MenuState`, `CaptionState` (handles the message screen prior to gameplay as well as the final outro), `GameplayState` and a special transitory state `TransitState`, which handles the fading transition using [kometbomb's color fade generaator](https://www.lexaloffle.com/bbs/?tid=28552).
+The game is powered by a simple **finite state machine**, including `SplashState`, `MenuState`, `CaptionState` (handles the message screen prior to gameplay as well as the final outro), `GameplayState` and a transitory state `TransitState`, which handles the fading transition using [kometbomb's color fade generaator](https://www.lexaloffle.com/bbs/?tid=28552).
 
 ### Entity component system
 
@@ -60,7 +61,7 @@ These two functions drive the bulk of the  game:
     end
 
     -- iterate through entire table of entities (world)
-    -- run a custom function via the second parameter
+    -- run a custom function via the second argument
     function System(ks, f)
         return function(system)
             for e in all(system) do
